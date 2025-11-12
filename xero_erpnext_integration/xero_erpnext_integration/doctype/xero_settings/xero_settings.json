@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-25 01:13:43.153804",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable",
+  "column_break_bynn",
+  "debug_mode",
+  "authorization_section",
+  "client_id",
+  "column_break_eoet",
+  "client_secret",
+  "section_break_fizg",
+  "base_url",
+  "token_expires_at",
+  "state",
+  "scope",
+  "code",
+  "webhook_secret",
+  "column_break_ftam",
+  "access_token_url",
+  "access_token",
+  "redirect_uri",
+  "tenant_id_url",
+  "refresh_token",
+  "tenant_id",
+  "tenant_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_bynn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_fizg",
+   "fieldtype": "Section Break",
+   "label": "Configurations"
+  },
+  {
+   "fieldname": "column_break_ftam",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "label": "Base URL"
+  },
+  {
+   "default": "0",
+   "fieldname": "debug_mode",
+   "fieldtype": "Check",
+   "label": "Debug Mode"
+  },
+  {
+   "fieldname": "tenant_id",
+   "fieldtype": "Data",
+   "label": "Tenant ID"
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Data",
+   "label": "Webhook Secret"
+  },
+  {
+   "fieldname": "access_token",
+   "fieldtype": "Data",
+   "label": "Access Token"
+  },
+  {
+   "fieldname": "refresh_token",
+   "fieldtype": "Data",
+   "label": "Refresh Token"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable",
+   "fieldtype": "Check",
+   "label": "Enable"
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID"
+  },
+  {
+   "fieldname": "client_secret",
+   "fieldtype": "Password",
+   "label": "Client Secret"
+  },
+  {
+   "fieldname": "tenant_name",
+   "fieldtype": "Data",
+   "label": "Tenant Name"
+  },
+  {
+   "fieldname": "access_token_url",
+   "fieldtype": "Data",
+   "label": "Access Token URL"
+  },
+  {
+   "fieldname": "token_expires_at",
+   "fieldtype": "Data",
+   "label": "Token Expires At"
+  },
+  {
+   "fieldname": "scope",
+   "fieldtype": "Data",
+   "label": "Scope"
+  },
+  {
+   "fieldname": "redirect_uri",
+   "fieldtype": "Data",
+   "label": "Redirect URI"
+  },
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Code"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
+  },
+  {
+   "fieldname": "tenant_id_url",
+   "fieldtype": "Data",
+   "label": "Tenant ID URL"
+  },
+  {
+   "fieldname": "authorization_section",
+   "fieldtype": "Section Break",
+   "label": "Authorization"
+  },
+  {
+   "fieldname": "column_break_eoet",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-07-02 02:37:20.711765",
+ "modified_by": "Administrator",
+ "module": "Xero Erpnext Integration",
+ "name": "Xero Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

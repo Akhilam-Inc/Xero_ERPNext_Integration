@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "XR.YY.MM.-.####",
+ "creation": "2025-06-25 01:17:54.753228",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "api_method",
+  "message",
+  "timestamp",
+  "column_break_gzuz",
+  "api_url",
+  "status_code",
+  "headers",
+  "section_break_hise",
+  "payload",
+  "column_break_ffyz",
+  "response"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_hise",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Payload",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ffyz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Code",
+   "label": "Response",
+   "read_only": 1
+  },
+  {
+   "fieldname": "api_method",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "API Method",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_gzuz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "api_url",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "API URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Timestamp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "headers",
+   "fieldtype": "Code",
+   "label": "headers",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-20 23:07:31.463620",
+ "modified_by": "Administrator",
+ "module": "Xero Erpnext Integration",
+ "name": "Xero API Log",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

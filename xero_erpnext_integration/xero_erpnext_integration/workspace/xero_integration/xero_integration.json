@@ -1,0 +1,91 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"I0AceHYFOQ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Xero Integration</span>\",\"col\":12}},{\"id\":\"RRvMkc2ap6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"BvRCG4Fm6i\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment Entry\",\"col\":3}},{\"id\":\"zGm-icD1ov\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contact\",\"col\":3}},{\"id\":\"TBRgdTITCq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Xero Help\",\"col\":3}},{\"id\":\"jZ4FG7H1Ce\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"e8ZyCC3Fm5\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}}]",
+ "creation": "2025-06-25 01:26:47.103646",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "expenses",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Xero Integration",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Masters",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Xero Settings",
+   "link_count": 0,
+   "link_to": "Xero Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Xero API Log",
+   "link_count": 0,
+   "link_to": "Xero API Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2025-07-23 09:25:49.187331",
+ "modified_by": "Administrator",
+ "module": "Xero Erpnext Integration",
+ "name": "Xero Integration",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Payment Entry",
+   "link_to": "Payment Entry",
+   "stats_filter": "[[\"Payment Entry\",\"name\",\"is\",\"set\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Xero Help",
+   "type": "URL",
+   "url": "/xero-help"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Sales Invoice",
+   "link_to": "Sales Invoice",
+   "stats_filter": "[[\"Sales Invoice\",\"name\",\"is\",\"set\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Contact",
+   "link_to": "Contact",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Xero Integration"
+}

@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xero Integration App - User Documentation</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/xero_erpnext_integration/images/akhilam-logo.svg">
+    <link rel="icon" type="image/png" href="/assets/xero_erpnext_integration/images/akhilam-logo.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        a{
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Header with Akhilam branding */
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1e40af 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(30, 58, 138, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 150px;
+            height: 150px;
+            filter: brightness(0) invert(1);
+        }
+
+        .header-text {
+            text-align: left;
+        }
+
+        .header h3 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            color: #e2e8f0;
+        }
+
+        .powered-by {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 0.5rem;
+            color: #cbd5e1;
+        }
+
+        .powered-by a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .powered-by a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+            opacity: 1;
+        }
+
+        /* Sidebar Navigation with Akhilam colors */
+        .sidebar {
+            width: 280px;
+            background: white;
+            padding: 2rem 0;
+            box-shadow: 2px 0 10px rgba(30, 58, 138, 0.1);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-menu li {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-menu a {
+            display: block;
+            padding: 0.75rem 2rem;
+            color: #475569;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background-color: #f1f5f9;
+            color: #1e40af;
+            border-left-color: #3b82f6;
+        }
+
+        .nav-menu a i {
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            background: white;
+            margin: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(30, 58, 138, 0.1);
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: #1e293b;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #3b82f6;
+        }
+
+        h3 {
+            color: #334155;
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem 0;
+        }
+
+        h4 {
+            color: #475569;
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        /* Cards with Akhilam styling */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 10px rgba(30, 58, 138, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1e3a8a 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            border-radius: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(30, 58, 138, 0.2);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(30, 58, 138, 0.3);
+        }
+
+        .feature-card i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        /* Tables with Akhilam colors */
+        .table-container {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(30, 58, 138, 0.1);
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Buttons with Akhilam branding */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.2);
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: #ffffff;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+        }
+
+        /* Code blocks */
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            border-left: 4px solid #3b82f6;
+        }
+
+        code {
+            background: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #dc2626;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Alerts with Akhilam colors */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border-color: #10b981;
+            color: #065f46;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        /* Steps with Akhilam styling */
+        .steps {
+            counter-reset: step-counter;
+        }
+
+        .step {
+            counter-increment: step-counter;
+            position: relative;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(30, 58, 138, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .step::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: -15px;
+            top: 1.5rem;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Search with Akhilam styling */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+
+            .main-content {
+                margin: 1rem;
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-text {
+                text-align: center;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .sidebar {
+                display: none;
+            }
+            
+            .main-content {
+                margin: 0;
+                box-shadow: none;
+            }
+            
+            .section {
+                display: block !important;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="/assets/xero_erpnext_integration/images/akhilam-logo.svg" alt="Akhilam Inc" class="logo">
+            </div>
+                            <div class="header-text">
+                    <h3><i class="fas fa-sync-alt"></i> Xero ERPNext Integration</h3>
+                    <p>Complete User Documentation</p>
+                    <div class="powered-by">Powered by <a href="https://akhilaminc.com" target="_blank" rel="noopener noreferrer">Akhilam Inc</a></div>
+                </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <nav class="sidebar">
+            <ul class="nav-menu">
+                <li><a href="#overview" class="nav-link active"><i class="fas fa-home"></i> Overview</a></li>
+                <li><a href="#prerequisites" class="nav-link"><i class="fas fa-list-check"></i> Prerequisites</a></li>
+                <li><a href="#installation" class="nav-link"><i class="fas fa-download"></i> Installation</a></li>
+                <li><a href="#configuration" class="nav-link"><i class="fas fa-cog"></i> Configuration</a></li>
+                <li><a href="#features" class="nav-link"><i class="fas fa-star"></i> Features</a></li>
+                <!-- <li><a href="#synchronization" class="nav-link"><i class="fas fa-sync"></i> Synchronization</a></li> -->
+                <li><a href="#troubleshooting" class="nav-link"><i class="fas fa-tools"></i> Troubleshooting</a></li>
+                <li><a href="#faq" class="nav-link"><i class="fas fa-question-circle"></i> FAQ</a></li>
+                <li><a href="#support" class="nav-link"><i class="fas fa-life-ring"></i> Support</a></li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search documentation..." id="searchInput">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+
+            <!-- Overview Section -->
+            <section id="overview" class="section active">
+                <h2>Overview</h2>
+                
+                <p>The Xero Integration App seamlessly connects your Frappe/ERPNext system with Xero accounting software</p>
+
+                <div class="card-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-sync-alt"></i>
+                        <h3>Automated Sync</h3>
+                        <p>Automatically sync customers, suppliers, items, and transactions between systems</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Real-time Updates</h3>
+                        <p>Keep both systems synchronized with real-time data updates</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>Error Reduction</h3>
+                        <p>Eliminate manual data entry errors with automated processes</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-history"></i>
+                        <h3>Audit Trail</h3>
+                        <p>Maintain complete transaction history and mapping records</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong><i class="fas fa-info-circle"></i> Key Benefits:</strong>
+                    <ul>
+                        <li>Automated Data Sync between Frappe/ERPNext and Xero</li>
+                        <li>Real-time Updates for immediate data consistency</li>
+                        <li>Error Reduction through automated processes</li>
+                        <li>Time Saving by reducing administrative overhead</li>
+                        <li>Complete Audit Trail for all transactions</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Prerequisites Section -->
+            <section id="prerequisites" class="section">
+                <h2>Prerequisites</h2>
+
+                <div class="card">
+                    <h3><i class="fas fa-server"></i> System Requirements</h3>
+                    <ul>
+                        <li>Frappe Framework v15.x or ERPNext v15.x</li>
+                        <li>Internet connectivity for API communication</li>
+                        <li>Administrator access to both Frappe/ERPNext and Xero</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-cloud"></i> Xero Requirements</h3>
+                    <ul>
+                        <li>Xero organization with appropriate permissions</li>
+                        <li>API access enabled</li>
+                        <li>Valid Xero subscription (Starter, Standard, or Premium)</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong><i class="fas fa-exclamation-triangle"></i> Important:</strong>
+                    Ensure you have administrator privileges in both systems before proceeding with the installation.
+                </div>
+            </section>
+
+            <!-- Installation Section -->
+            <section id="installation" class="section">
+                <h2>Installation & Setup</h2>
+
+                <div class="steps">
+                    <div class="step">
+                        <h3>Install the App</h3>
+                        <p>Run the following commands in your Frappe bench directory:</p>
+                        <pre><code>bench get-app xero_erpnext_integration
+bench install-app xero_erpnext_integration --site your-site-name</code></pre>
+                    </div>
+
+                    <div class="step">
+                        <h3>Enable the Integration</h3>
+                        <ol>
+                            <li>Login to your Frappe/ERPNext system</li>
+                            <li>Go to <strong>Xero Integration</strong> → <strong>Xero Settings</strong></li>
+                            <li>Click <button class="btn btn-success"><a href="/app/xero-settings">Enable Xero Integration</a></button></li>
+                        </ol>
+                    </div>
+
+                    <div class="step">
+                        <h3>Xero Authentication</h3>
+                        <ol>
+                            <li>In Xero Settings, Set client ID, client Secret, Enable, and Debug Mode </li>
+                            <li>click <button class="btn">Authorize</button></li>
+                            <li>You'll be redirected to Xero's authorization page</li>
+                            <li>Login with your Xero credentials</li>
+                            <li>Grant permissions to the integration app</li>
+                            <li>You'll be redirected back with a success message</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong><i class="fas fa-check-circle"></i> Success!</strong>
+                    Once authentication is complete, you'll see a green connection status in your Xero Settings.
+                </div>
+            </section>
+
+            <!-- Configuration Section -->
+            <section id="configuration" class="section">
+                <h2>Configuration</h2>
+
+                <h3><i class="fas fa-magic"></i> Initial Setup Wizard</h3>
+                <p>After successful authentication, the setup wizard will guide you through the configuration process:</p>
+
+                <div class="steps">
+                    <div class="step">
+                        <h4>Organization Selection</h4>
+                        <ul>
+                            <li>Select the Xero organization to sync with</li>
+                            <li>Confirm organization details and currency</li>
+                        </ul>
+                    </div>
+
+                    <div class="step">
+                        <h4>Sync Preferences</h4>
+                        <p>Configure what data to synchronize:</p>
+                        <div class="card">
+                            <ul style="list-style: none; padding-left: 0;">
+                                <li><i class="fas fa-check-square" style="color: #28a745;"></i> Customers</li>
+                                <li><i class="fas fa-check-square" style="color: #28a745;"></i> Suppliers</li>
+                                <li><i class="fas fa-check-square" style="color: #28a745;"></i> Items</li>
+                                <li><i class="fas fa-check-square" style="color: #28a745;"></i> Sales Invoices</li>
+                                <li><i class="fas fa-check-square" style="color: #28a745;"></i> Purchase Invoices</li>
+                                <li><i class="fas fa-check-square" style="color: #28a745;"></i> Payments</li>
+                                <li><i class="fas fa-check-square" style="color: #28a745;"></i> Credit Notes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <h3><i class="fas fa-cogs"></i> Advanced Configuration</h3>
+                
+                <div class="card">
+                    <h4>Settings</h4>
+                    <ul>
+                        <li>Set Company URL</li>
+                        <li>Set Redirect URL</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section id="features" class="section">
+                <h2>Features</h2>
+
+                <div class="card">
+                    <h3><i class="fas fa-users"></i> Customer Synchronization</h3>
+                    
+                    <h4>From Frappe/ERPNext to Xero</h4>
+                    <ul>
+                        <li>Create Contact for customer to sync with Xero</li>
+                        <li>Sales Invoice</li>
+                        <li>Cancel Sales Invoice</li>
+                        <!-- <li>Billing and shipping addresses</li>
+                        <li>Payment terms</li>
+                        <li>Credit limits</li>
+                        <li>Custom fields (configurable)</li> -->
+                    </ul>
+
+                    <div class="alert alert-info">
+                        <strong>Usage:</strong>
+                        <ol>
+                            <li>Create contact in contact page, check secnd to Xero box, then click on <button class="btn">Send to Xero</button></li>
+                            <li>To also create Contact ion sales invoice, click <button class="btn">Sync Contact in Xero</button></li>
+                            <li>On Submit of Sales Invoice, If <strong>Do not Sync to Xero</strong> is checked, it will not be synced to Xero for payment</li>
+                            <li>Check the <strong>Xero API Log</strong> for api status</li>
+                            <li>Confirm Sales Invoice in Xero, if <strong>Do not Sync to Xero</strong> is uncheckked</li>
+                            <li>Cancel Sales Invoice in Frappe/Erpnext, if successful, then confirm in Xero.</li>
+                        </ol>
+                    </div>
+
+                    <h4>From Xero to Frappe/ERPNext</h4>
+                    <ul>
+                        <li>Payment Entries</li>
+                        <li>Void Sales Invoice</li>
+                        <li>Create Contact to sync with Erpnext</li>
+                        <!-- <li>Address changes</li>
+                        <li>Payment term modifications</li> -->
+                    </ul>
+
+                    <div class="alert alert-info">
+                        <strong>Usage:</strong>
+                        <ol>
+                            <li>Create or update a contact in Frappe/Erpnext</li>
+                            <li>Create sales invoice in Frappe/Erpnext</li>
+                            <li>Make payment for sales invoice in Xero</li>
+                            <li>Check the <strong>Xero API Log</strong> for api status</li>
+                            <li>Confirm sales invoice paid after payment in xero</li>
+                            <li>If sales invoice is voided in xero, also confirm its reflected.</li>
+                            <li>Check the <strong>Xero Payment Scheduler</strong> for sync status</li>
+                        </ol>
+                    </div>
+                </div>
+
+            
+
+                <div class="card">
+                    <h3><i class="fas fa-file-invoice"></i> Invoice Processing</h3>
+                    
+                    <h4>Sales Invoices</h4>
+                    <div class="steps">
+                        <div class="step">
+                            <p>Create a sales invoice in Frappe/ERPNext</p>
+                        </div>
+                        <div class="step">
+                            <p>Submit the invoice</p>
+                        </div>
+                        <div class="step">
+                            <p>The integration automatically creates the invoice in Xero</p>
+                        </div>
+                        <div class="step">
+                            <p>Xero invoice number is stored for reference</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-credit-card"></i> Payment Synchronization</h3>
+                    
+                    <h4>Automatic Payment Matching</h4>
+                    <ul>
+                        <li>Payments recorded in xero are automatically matched</li>
+                        <!-- <li>Bank reconciliation data is synchronized</li>
+                        <li>Payment methods are mapped between systems</li> -->
+                    </ul>
+
+                </div>
+            </section>
+
+            
+
+            <!-- Troubleshooting Section -->
+            <section id="troubleshooting" class="section">
+                <h2>Troubleshooting</h2>
+
+                <h3><i class="fas fa-exclamation-triangle"></i> Common Issues</h3>
+
+                <div class="card">
+                    <h4>1. Authentication Errors</h4>
+                    <div class="alert alert-danger">
+                        <strong>Problem:</strong> "Invalid token" or "Authentication failed"
+                    </div>
+                    <div class="alert alert-success">
+                        <strong>Solution:</strong>
+                        <ol>
+                            <li>Go to Xero Settings</li>
+                            <li>Click <button class="btn">Authorize</button> to reconnect</li>
+                            <li>Complete the authentication process</li>
+                            <li>Test the connection</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>2. Sync Failures</h4>
+                    <div class="alert alert-danger">
+                        <strong>Problem:</strong> Records not syncing between systems
+                    </div>
+                    <div class="alert alert-success">
+                        <strong>Solution:</strong>
+                        <ol>
+                            <li>Check Xero API Log for errors</li>
+                            <li>Verify scheduler is running</li>
+                            <li>Ensure required fields are populated</li>
+                            <li>Check network connectivity</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>3. Duplicate Records</h4>
+                    <div class="alert alert-danger">
+                        <strong>Problem:</strong> Same record appears multiple times
+                    </div>
+                    <div class="alert alert-success">
+                        <strong>Solution:</strong>
+                        <ol>
+                            <li>Review matching criteria settings</li>
+                            <li>Check for duplicate records in source system</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h3><i class="fas fa-code"></i> Error Codes</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>Description</th>
+                                <th>Solution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>XE001</code></td>
+                                <td>Authentication failure</td>
+                                <td>Reconnect to Xero</td>
+                            </tr>
+                            <tr>
+                                <td><code>XE002</code></td>
+                                <td>Invalid account mapping</td>
+                                <td>Check account mappings</td>
+                            </tr>
+                            <tr>
+                                <td><code>XE003</code></td>
+                                <td>Missing required field</td>
+                                <td>Populate required fields</td>
+                            </tr>
+                            <tr>
+                                <td><code>XE004</code></td>
+                                <td>Rate limit exceeded</td>
+                                <td>Wait and retry</td>
+                            </tr>
+                            <tr>
+                                <td><code>XE005</code></td>
+                                <td>Network timeout</td>
+                                <td>Check internet connection</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-life-ring"></i> Getting Help</h3>
+                    
+                    <h4>Built-in Help</h4>
+                    <ul>
+                        <li>Hover over field labels for tooltips</li>
+                        <li>Click <strong>?</strong> icons for contextual help</li>
+                        <li>Access help documentation from the menu</li>
+                    </ul>
+
+                    <h4>Log Analysis</h4>
+                    <ol>
+                        <li>Go to <strong>Xero API Log</strong></li>
+                        <li>Filter by error status</li>
+                        <li>Review error messages</li>
+                        <li>Check suggested solutions</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- FAQ Section -->
+            <section id="faq" class="section">
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="card">
+                    <h3><i class="fas fa-question-circle"></i> General Questions</h3>
+                    
+                    <div class="faq-item">
+                        <h4><i class="fas fa-clock"></i> How often does the sync occur?</h4>
+                        <p>Sync frequency depends on your configuration. Options include real-time, hourly, daily, or manual sync.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4><i class="fas fa-history"></i> Can I sync historical data?</h4>
+                        <p>Yes, use the bulk sync feature to synchronize historical records within a specified date range.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4><i class="fas fa-edit"></i> What happens if I modify a record in both systems?</h4>
+                        <p>The system uses your configured conflict resolution rules. By default, the most recently modified record takes precedence.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4><i class="fas fa-database"></i> Is there a limit to how much data can be synced?</h4>
+                        <p>Xero API has rate limits. The integration handles these automatically by queuing requests.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-cogs"></i> Technical Questions</h3>
+                    
+                    <div class="faq-item">
+                        <h4><i class="fas fa-map"></i> Can I customize field mappings?</h4>
+                        <p>Yes, go to Xero Settings → Field Mappings to customize how fields are mapped between systems.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4><i class="fas fa-dollar-sign"></i> How do I handle multi-currency transactions?</h4>
+                        <p>The integration supports multi-currency if enabled in both systems. Exchange rates are synchronized from Xero.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4><i class="fas fa-filter"></i> Can I exclude certain records from syncing?</h4>
+                        <p>Yes, use sync filters to exclude records based on specific criteria.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-tools"></i> Troubleshooting Questions</h3>
+                    
+                    <div class="faq-item">
+                        <h4><i class="fas fa-exclamation-triangle"></i> What if sync fails for a specific record?</h4>
+                        <p>Check the Integration Log for error details. Most issues are related to missing required fields or validation errors.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4><i class="fas fa-redo"></i> How do I reset the integration?</h4>
+                        <p>Go to Xero Settings → Advanced → Reset Integration. This will clear all mappings and require reconfiguration.</p>
+                    </div>
+
+                    <div class="faq-item">
+                        <h4><i class="fas fa-pause"></i> Can I pause synchronization temporarily?</h4>
+                        <p>Yes, disable the integration in Xero Settings. Re-enable when ready to resume syncing.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Support Section -->
+            <section id="support" class="section">
+                <h2>Support</h2>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3><i class="fas fa-book"></i> Documentation Resources</h3>
+                        <ul>
+                            <li><a href="https://developer.xero.com/" target="_blank">Xero API Documentation</a></li>
+                            <li><a href="https://frappeframework.com/docs" target="_blank">Frappe Framework Documentation</a></li>
+                            <li><a href="https://docs.erpnext.com/" target="_blank">ERPNext User Manual</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3><i class="fas fa-users"></i> Community Support</h3>
+                        <ul>
+                            <li><a href="https://discuss.frappe.io/" target="_blank">Frappe Community Forum</a></li>
+                            <li><a href="https://github.com/frappe/erpnext" target="_blank">GitHub Issues</a></li>
+                            <li><a href="#" target="_blank">Discord Community</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3><i class="fas fa-headset"></i> Professional Support</h3>
+                        <ul>
+                            <li>Contact your system administrator</li>
+                            <li>Reach out to your implementation partner</li>
+                            <li>Submit a support ticket through your service provider</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-lightbulb"></i> Best Practices</h3>
+                    
+                    <h4>Data Management</h4>
+                    <ol>
+                        <li><strong>Regular Backups:</strong> Always backup data before major sync operations</li>
+                        <li><strong>Test Environment:</strong> Test configurations in a staging environment first</li>
+                        <li><strong>Monitor Logs:</strong> Regularly review integration logs for issues</li>
+                        <li><strong>Clean Data:</strong> Ensure data quality in both systems before syncing</li>
+                    </ol>
+
+                    <h4>Performance Optimization</h4>
+                    <ol>
+                        <li><strong>Sync Scheduling:</strong> Schedule heavy sync operations during off-peak hours</li>
+                        <li><strong>Selective Sync:</strong> Only sync necessary data to improve performance</li>
+                        <li><strong>Regular Maintenance:</strong> Periodically clean up old log entries</li>
+                        <li><strong>Monitor Resources:</strong> Keep an eye on system resources during sync operations</li>
+                    </ol>
+
+                    <h4>Security</h4>
+                    <ol>
+                        <li><strong>Access Control:</strong> Limit integration access to authorized users only</li>
+                        <li><strong>Regular Updates:</strong> Keep the integration app updated</li>
+                        <li><strong>Audit Trail:</strong> Regularly review sync logs for unusual activity</li>
+                        <li><strong>Secure Credentials:</strong> Ensure Xero credentials are properly secured</li>
+                    </ol>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong><i class="fas fa-info-circle"></i> Version Information:</strong><br>
+                    <strong>Version:</strong> 1.0<br>
+                    <strong>Compatible With:</strong> Frappe v15.x, ERPNext v15.x, Xero API v2.0<br>
+                    <strong>Last Updated:</strong> <span id="currentDate"></span>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.section');
+            const searchInput = document.getElementById('searchInput');
+
+            // Set current date
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+
+            // Navigation click handler
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links and sections
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Show corresponding section
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    }
+                    
+                    // Scroll to top of main content
+                    document.querySelector('.main-content').scrollTop = 0;
+                });
+            });
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const allContent = document.querySelectorAll('.section h2, .section h3, .section h4, .section p, .section li, .section td');
+                
+                if (searchTerm === '') {
+                    // Reset highlighting
+                    allContent.forEach(element => {
+                        element.innerHTML = element.textContent;
+                    });
+                    return;
+                }
+
+                // Highlight search results
+                allContent.forEach(element => {
+                    const text = element.textContent;
+                    if (text.toLowerCase().includes(searchTerm)) {
+                        const regex = new RegExp(`(${searchTerm})`, 'gi');
+                        element.innerHTML = text.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+                    }
+                });
+            });
+
+            // Smooth scrolling for anchor links
+            querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // FAQ accordion functionality
+            const faqItems = document.querySelectorAll('.faq-item h4');
+            faqItems.forEach(item => {
+                item.style.cursor = 'pointer';
+                item.style.padding = '10px';
+                item.style.backgroundColor = '#f8f9fa';
+                item.style.borderRadius = '5px';
+                item.style.marginBottom = '10px';
+                item.style.transition = 'background-color 0.3s ease';
+                
+                const content = item.nextElementSibling;
+                content.style.display = 'block';
+                content.style.maxHeight = '0';
+                content.style.overflow = 'hidden';
+                content.style.transition = 'max-height 0.3s ease';
+                
+                item.addEventListener('click', function() {
+                    const isOpen = content.style.maxHeight !== '0px';
+                    
+                    if (isOpen) {
+                        content.style.maxHeight = '0';
+                        this.style.backgroundColor = '#f8f9fa';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        this.style.backgroundColor = '#e9ecef';
+                    }
+                });
+                
+                // Initially expand all FAQ items
+                setTimeout(() => {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }, 100);
+            });
+
+            // Add copy functionality to code blocks
+            const codeBlocks = document.querySelectorAll('pre code');
+            codeBlocks.forEach(block => {
+                const pre = block.parentElement;
+                pre.style.position = 'relative';
+                
+                const copyButton = document.createElement('button');
+                copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                copyButton.className = 'btn';
+                copyButton.style.position = 'absolute';
+                copyButton.style.top = '10px';
+                copyButton.style.right = '10px';
+                copyButton.style.padding = '5px 10px';
+                copyButton.style.fontSize = '12px';
+                copyButton.title = 'Copy to clipboard';
+                
+                copyButton.addEventListener('click', function() {
+                    navigator.clipboard.writeText(block.textContent).then(() => {
+                        copyButton.innerHTML = '<i class="fas fa-check"></i>';
+                        copyButton.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                            copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                            copyButton.style.backgroundColor = '#667eea';
+                        }, 2000);
+                    });
+                });
+                
+                pre.appendChild(copyButton);
+            });
+
+            // Add progress indicator
+            const progressBar = document.createElement('div');
+            progressBar.style.position = 'fixed';
+            progressBar.style.top = '0';
+            progressBar.style.left = '0';
+            progressBar.style.width = '0%';
+            progressBar.style.height = '3px';
+            progressBar.style.backgroundColor = '#667eea';
+            progressBar.style.zIndex = '9999';
+            progressBar.style.transition = 'width 0.3s ease';
+            document.body.appendChild(progressBar);
+
+            // Update progress bar on scroll
+            const mainContent = document.querySelector('.main-content');
+            mainContent.addEventListener('scroll', function() {
+                const scrollTop = this.scrollTop;
+                const scrollHeight = this.scrollHeight - this.clientHeight;
+                const scrollPercent = (scrollTop / scrollHeight) * 100;
+                progressBar.style.width = scrollPercent + '%';
+            });
+
+            // Add table of contents for current section
+            function generateTOC(section) {
+                const headings = section.querySelectorAll('h3, h4');
+                if (headings.length === 0) return;
+
+                const tocContainer = document.createElement('div');
+                tocContainer.className = 'toc-container';
+                tocContainer.style.cssText = `
+                    background: #f8f9fa;
+                    border: 1px solid #dee2e6;
+                    border-radius: 8px;
+                    padding: 1rem;
+                    margin: 1rem 0;
+                    position: sticky;
+                    top: 20px;
+                    z-index: 100;
+                `;
+
+                const tocTitle = document.createElement('h4');
+                tocTitle.textContent = 'On This Page';
+                tocTitle.style.marginBottom = '0.5rem';
+                tocTitle.style.color = '#495057';
+                tocContainer.appendChild(tocTitle);
+
+                const tocList = document.createElement('ul');
+                tocList.style.cssText = `
+                    list-style: none;
+                    padding-left: 0;
+                    margin: 0;
+                `;
+
+                headings.forEach((heading, index) => {
+                    const id = `toc-${index}`;
+                    heading.id = id;
+
+                    const listItem = document.createElement('li');
+                    listItem.style.marginBottom = '0.25rem';
+
+                    const link = document.createElement('a');
+                    link.href = `#${id}`;
+                    link.textContent = heading.textContent;
+                    link.style.cssText = `
+                        color: #6c757d;
+                        text-decoration: none;
+                        font-size: 0.9rem;
+                        padding: 0.25rem 0;
+                        display: block;
+                        transition: color 0.3s ease;
+                        ${heading.tagName === 'H4' ? 'padding-left: 1rem;' : ''}
+                    `;
+
+                    link.addEventListener('mouseover', () => {
+                        link.style.color = '#667eea';
+                    });
+
+                    link.addEventListener('mouseout', () => {
+                        link.style.color = '#6c757d';
+                    });
+
+                    listItem.appendChild(link);
+                    tocList.appendChild(listItem);
+                });
+
+                tocContainer.appendChild(tocList);
+                
+                // Insert TOC after the first paragraph or at the beginning
+                const firstParagraph = section.querySelector('p');
+                if (firstParagraph) {
+                    firstParagraph.parentNode.insertBefore(tocContainer, firstParagraph.nextSibling);
+                } else {
+                    section.insertBefore(tocContainer, section.firstChild.nextSibling);
+                }
+            }
+
+            // Generate TOC for sections with multiple headings
+            sections.forEach(section => {
+                const headings = section.querySelectorAll('h3, h4');
+                if (headings.length > 2) {
+                    generateTOC(section);
+                }
+            });
+
+            // Add keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'f':
+                        case 'F':
+                            e.preventDefault();
+                            searchInput.focus();
+                            break;
+                        case 'p':
+                        case 'P':
+                            e.preventDefault();
+                            window.print();
+                            break;
+                    }
+                }
+            });
+
+            // Add tooltips to buttons
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                if (!button.title) {
+                    button.title = button.textContent.trim();
+                }
+            });
+
+            // Add loading states for interactive elements
+            const interactiveElements = document.querySelectorAll('.btn, .nav-link');
+            interactiveElements.forEach(element => {
+                element.addEventListener('click', function() {
+                    this.style.opacity = '0.7';
+                    setTimeout(() => {
+                        this.style.opacity = '1';
+                    }, 200);
+                });
+            });
+
+            // Add print styles dynamically
+            const printStyles = document.createElement('style');
+            printStyles.textContent = `
+                @media print {
+                    .sidebar { display: none !important; }
+                    .main-content { 
+                        margin: 0 !important; 
+                        box-shadow: none !important;
+                        max-width: none !important;
+                    }
+                    .section { 
+                        display: block !important; 
+                        page-break-after: always;
+                    }
+                    .btn { 
+                        border: 1px solid #ccc !important;
+                        background: white !important;
+                        color: black !important;
+                    }
+                    .search-container { display: none !important; }
+                    .toc-container { 
+                        position: static !important;
+                        page-break-inside: avoid;
+                    }
+                }
+            `;
+            document.head.appendChild(printStyles);
+
+            // Add dark mode toggle (optional)
+            const darkModeToggle = document.createElement('button');
+            darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            darkModeToggle.className = 'btn';
+            darkModeToggle.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                z-index: 1000;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            `;
+            darkModeToggle.title = 'Toggle Dark Mode';
+            
+            darkModeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                this.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                
+                // Store preference
+                localStorage.setItem('darkMode', isDark);
+            });
+
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+                darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+
+            document.body.appendChild(darkModeToggle);
+
+            // Add dark mode styles
+            const darkModeStyles = document.createElement('style');
+            darkModeStyles.textContent = `
+                .dark-mode {
+                    background-color: #1a1a1a !important;
+                    color: #e0e0e0 !important;
+                }
+                .dark-mode .sidebar {
+                    background-color: #2d2d2d !important;
+                    color: #e0e0e0 !important;
+                }
+                .dark-mode .main-content {
+                    background-color: #2d2d2d !important;
+                    color: #e0e0e0 !important;
+                }
+                .dark-mode .card {
+                    background-color: #3d3d3d !important;
+                    color: #e0e0e0 !important;
+                }
+                .dark-mode table {
+                    background-color: #3d3d3d !important;
+                }
+                .dark-mode th {
+                    background-color: #4d4d4d !important;
+                }
+                .dark-mode .nav-menu a {
+                    color: #b0b0b0 !important;
+                }
+                .dark-mode .nav-menu a:hover,
+                .dark-mode .nav-menu a.active {
+                    background-color: #4d4d4d !important;
+                    color: #667eea !important;
+                }
+            `;
+            document.head.appendChild(darkModeStyles);
+        });
+
+        // Add service worker for offline functionality (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful');
+                }, function(err) {
+                    console.log('ServiceWorker registration failed');
+                });
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
