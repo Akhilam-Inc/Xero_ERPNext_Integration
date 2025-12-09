@@ -475,12 +475,12 @@
             .sidebar {
                 display: none;
             }
-            
+
             .main-content {
                 margin: 0;
                 box-shadow: none;
             }
-            
+
             .section {
                 display: block !important;
                 page-break-after: always;
@@ -526,7 +526,7 @@
             <!-- Overview Section -->
             <section id="overview" class="section active">
                 <h2>Overview</h2>
-                
+
                 <p>The Xero Integration App seamlessly connects your Frappe/ERPNext system with Xero accounting software</p>
 
                 <div class="card-grid">
@@ -666,7 +666,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                 </div>
 
                 <h3><i class="fas fa-cogs"></i> Advanced Configuration</h3>
-                
+
                 <div class="card">
                     <h4>Settings</h4>
                     <ul>
@@ -682,7 +682,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
 
                 <div class="card">
                     <h3><i class="fas fa-users"></i> Customer Synchronization</h3>
-                    
+
                     <h4>From Frappe/ERPNext to Xero</h4>
                     <ul>
                         <li>Create Contact for customer to sync with Xero</li>
@@ -729,11 +729,11 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                     </div>
                 </div>
 
-            
+
 
                 <div class="card">
                     <h3><i class="fas fa-file-invoice"></i> Invoice Processing</h3>
-                    
+
                     <h4>Sales Invoices</h4>
                     <div class="steps">
                         <div class="step">
@@ -753,7 +753,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
 
                 <div class="card">
                     <h3><i class="fas fa-credit-card"></i> Payment Synchronization</h3>
-                    
+
                     <h4>Automatic Payment Matching</h4>
                     <ul>
                         <li>Payments recorded in xero are automatically matched</li>
@@ -764,7 +764,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                 </div>
             </section>
 
-            
+
 
             <!-- Troubleshooting Section -->
             <section id="troubleshooting" class="section">
@@ -860,7 +860,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
 
                 <div class="card">
                     <h3><i class="fas fa-life-ring"></i> Getting Help</h3>
-                    
+
                     <h4>Built-in Help</h4>
                     <ul>
                         <li>Hover over field labels for tooltips</li>
@@ -884,7 +884,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
 
                 <div class="card">
                     <h3><i class="fas fa-question-circle"></i> General Questions</h3>
-                    
+
                     <div class="faq-item">
                         <h4><i class="fas fa-clock"></i> How often does the sync occur?</h4>
                         <p>Sync frequency depends on your configuration. Options include real-time, hourly, daily, or manual sync.</p>
@@ -908,7 +908,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
 
                 <div class="card">
                     <h3><i class="fas fa-cogs"></i> Technical Questions</h3>
-                    
+
                     <div class="faq-item">
                         <h4><i class="fas fa-map"></i> Can I customize field mappings?</h4>
                         <p>Yes, go to Xero Settings → Field Mappings to customize how fields are mapped between systems.</p>
@@ -927,7 +927,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
 
                 <div class="card">
                     <h3><i class="fas fa-tools"></i> Troubleshooting Questions</h3>
-                    
+
                     <div class="faq-item">
                         <h4><i class="fas fa-exclamation-triangle"></i> What if sync fails for a specific record?</h4>
                         <p>Check the Integration Log for error details. Most issues are related to missing required fields or validation errors.</p>
@@ -980,7 +980,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
 
                 <div class="card">
                     <h3><i class="fas fa-lightbulb"></i> Best Practices</h3>
-                    
+
                     <h4>Data Management</h4>
                     <ol>
                         <li><strong>Regular Backups:</strong> Always backup data before major sync operations</li>
@@ -1030,21 +1030,21 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     // Remove active class from all links and sections
                     navLinks.forEach(l => l.classList.remove('active'));
                     sections.forEach(s => s.classList.remove('active'));
-                    
+
                     // Add active class to clicked link
                     this.classList.add('active');
-                    
+
                     // Show corresponding section
                     const targetId = this.getAttribute('href').substring(1);
                     const targetSection = document.getElementById(targetId);
                     if (targetSection) {
                         targetSection.classList.add('active');
                     }
-                    
+
                     // Scroll to top of main content
                     document.querySelector('.main-content').scrollTop = 0;
                 });
@@ -1054,7 +1054,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
             searchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
                 const allContent = document.querySelectorAll('.section h2, .section h3, .section h4, .section p, .section li, .section td');
-                
+
                 if (searchTerm === '') {
                     // Reset highlighting
                     allContent.forEach(element => {
@@ -1096,16 +1096,16 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                 item.style.borderRadius = '5px';
                 item.style.marginBottom = '10px';
                 item.style.transition = 'background-color 0.3s ease';
-                
+
                 const content = item.nextElementSibling;
                 content.style.display = 'block';
                 content.style.maxHeight = '0';
                 content.style.overflow = 'hidden';
                 content.style.transition = 'max-height 0.3s ease';
-                
+
                 item.addEventListener('click', function() {
                     const isOpen = content.style.maxHeight !== '0px';
-                    
+
                     if (isOpen) {
                         content.style.maxHeight = '0';
                         this.style.backgroundColor = '#f8f9fa';
@@ -1114,7 +1114,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                         this.style.backgroundColor = '#e9ecef';
                     }
                 });
-                
+
                 // Initially expand all FAQ items
                 setTimeout(() => {
                     content.style.maxHeight = content.scrollHeight + 'px';
@@ -1126,7 +1126,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
             codeBlocks.forEach(block => {
                 const pre = block.parentElement;
                 pre.style.position = 'relative';
-                
+
                 const copyButton = document.createElement('button');
                 copyButton.innerHTML = '<i class="fas fa-copy"></i>';
                 copyButton.className = 'btn';
@@ -1136,7 +1136,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                 copyButton.style.padding = '5px 10px';
                 copyButton.style.fontSize = '12px';
                 copyButton.title = 'Copy to clipboard';
-                
+
                 copyButton.addEventListener('click', function() {
                     navigator.clipboard.writeText(block.textContent).then(() => {
                         copyButton.innerHTML = '<i class="fas fa-check"></i>';
@@ -1147,7 +1147,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                         }, 2000);
                     });
                 });
-                
+
                 pre.appendChild(copyButton);
             });
 
@@ -1236,7 +1236,7 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                 });
 
                 tocContainer.appendChild(tocList);
-                
+
                 // Insert TOC after the first paragraph or at the beginning
                 const firstParagraph = section.querySelector('p');
                 if (firstParagraph) {
@@ -1296,22 +1296,22 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
             printStyles.textContent = `
                 @media print {
                     .sidebar { display: none !important; }
-                    .main-content { 
-                        margin: 0 !important; 
+                    .main-content {
+                        margin: 0 !important;
                         box-shadow: none !important;
                         max-width: none !important;
                     }
-                    .section { 
-                        display: block !important; 
+                    .section {
+                        display: block !important;
                         page-break-after: always;
                     }
-                    .btn { 
+                    .btn {
                         border: 1px solid #ccc !important;
                         background: white !important;
                         color: black !important;
                     }
                     .search-container { display: none !important; }
-                    .toc-container { 
+                    .toc-container {
                         position: static !important;
                         page-break-inside: avoid;
                     }
@@ -1334,12 +1334,12 @@ bench install-app xero_erpnext_integration --site your-site-name</code></pre>
                 box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             `;
             darkModeToggle.title = 'Toggle Dark Mode';
-            
+
             darkModeToggle.addEventListener('click', function() {
                 document.body.classList.toggle('dark-mode');
                 const isDark = document.body.classList.contains('dark-mode');
                 this.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-                
+
                 // Store preference
                 localStorage.setItem('darkMode', isDark);
             });
