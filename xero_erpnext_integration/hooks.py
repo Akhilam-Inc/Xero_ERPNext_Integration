@@ -1,4 +1,3 @@
-
 app_name = "xero_erpnext_integration"
 app_title = "Xero Erpnext Integration"
 app_publisher = "nasirucode"
@@ -45,40 +44,34 @@ app_license = "mit"
 
 # include js in doctype views
 doctype_js = {
-    "Contact" : "xero_erpnext_integration/custom_scripts/contact.js",
-    "Sales Invoice" : "xero_erpnext_integration/custom_scripts/sales_invoice.js",
-    "Payment Entry": "xero_erpnext_integration/custom_scripts/payment_entry.js"
+	"Contact": "xero_erpnext_integration/custom_scripts/contact.js",
+	"Sales Invoice": "xero_erpnext_integration/custom_scripts/sales_invoice.js",
+	"Payment Entry": "xero_erpnext_integration/custom_scripts/payment_entry.js",
 }
 
 scheduler_events = {
-    "cron": {
-		"0 */2 * * *":  [
+	"cron": {
+		"0 */2 * * *": [
 			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.sync_invoice_payments"
 		],
 		"*/30 * * * *": [
 			"xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync.sync_voided_invoices"
-		]
+		],
 	},
 }
 
 # Document Events
 doc_events = {
-    "Sales Invoice": {
-        # "on_submit": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.on_submit",
-        "on_cancel": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.on_cancel",
-        # "before_submit": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.before_submit",
-    }
+	"Sales Invoice": {
+		# "on_submit": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.on_submit",
+		"on_cancel": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.on_cancel",
+		# "before_submit": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.before_submit",
+	}
 }
 
 fixtures = [
-   {
-       "doctype": "Custom Field",
-       "filters": [["module", "=", "Xero Erpnext Integration"]]
-   },
-   {
-       "doctype": "Property Setter",
-       "filters": [["module", "=", "Xero Erpnext Integration"]]
-   }
+	{"doctype": "Custom Field", "filters": [["module", "=", "Xero Erpnext Integration"]]},
+	{"doctype": "Property Setter", "filters": [["module", "=", "Xero Erpnext Integration"]]},
 ]
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -278,4 +271,3 @@ fixtures = [
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-
