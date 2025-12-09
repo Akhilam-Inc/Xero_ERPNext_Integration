@@ -1,174 +1,157 @@
-# Xero ERPNext Integration
+# 📘 Xero Integration for ERPNext
 
-## Overview
+Sync **Contacts, Invoices, Payments & Credit Notes** between **Xero** and **ERPNext** — automatically, accurately, and in real-time.  
+Stop manual entry, prevent duplicates, and keep finance systems perfectly aligned.
 
-The Xero ERPNext Integration app keeps accounting data consistent across Xero and ERPNext. It offers guided setup, secure OAuth 2.0 connectivity, and resilient synchronisation jobs so finance and operations teams stay aligned.
+---
 
-## Features
+## 🚀 Overview
 
-- Two-way synchronisation for contacts, sales invoices, and payments
-- OAuth 2.0 authentication with token refresh handled automatically
-- Scheduled jobs plus on-demand actions for backfilling data
-- Webhook ingestion for near real-time updates from Xero
-- Detailed API logging via the `Xero API Log` DocType for monitoring and audits
+The **Xero Integration for ERPNext** bridges your accounting workflow by synchronizing customer & financial records between ERPNext and Xero.  
+This means **no more manual typing of invoices or payments**, faster closing cycles, and real-time visibility for finance teams.
 
-## Installation
+Whether you manage billing in ERPNext or accounting in Xero, both systems remain accurate and up-to-date.
 
+---
+
+## 🎯 Why Choose This App?
+
+### **Eliminate Manual Data Entry**
+Stop copying contacts, invoices, and payments between systems. Automation handles it reliably.
+
+### **Real-Time Financial Sync**
+Changes in either platform appear automatically in the other via background jobs & webhooks.
+
+### **Make Better Decisions**
+Get live revenue and outstanding receivable visibility without waiting for month-end reporting.
+
+---
+
+## 🔄 What Does It Sync?
+
+| ERPNext ↔ Xero | Real-Time | Background Sync | Two-Way |
+|----------------|-----------|------------------|---------|
+| Contacts / Customers | ✔ | ✔ | ✔ |
+| Sales Invoices | ✔ | ✔ | ✔ |
+| Payments | ✔ | ✔ | ✔ |
+| Voided / Cancelled Invoices | ✔ | ✔ | ✔ |
+| Sync Logs | ✔ | ✔ | – |
+
+---
+
+## 🧠 What Problems Does It Solve?
+
+- ⚠️ Duplicate customer or invoice records  
+  **✅ Two-way intelligent sync**
+
+- ⚠️ Manual re-entry of financial documents  
+  **✅ Automated invoice & payment synchronization**
+
+- ⚠️ Mismatched balances & totals  
+  **✅ Accurate mapping and validation logic**
+
+- ⚠️ Delayed reporting & reconciliation delays  
+  **✅ Real-time synchronization powered by scheduled jobs**
+
+- ⚠️ Financial visibility only during closing  
+  **✅ Instant clarity on outstanding receivables & payments**
+
+---
+
+## 🌟 Key Benefits
+
+- 🌟 **Save hours every week** — eliminate manual copying
+- 🌟 **Improved accuracy** — fewer data entry mistakes
+- 🌟 **Automated and reliable** — background job processing
+- 🌟 **Audit ready** — everything tracked in sync logs
+- 🌟 **Scales with your business** — handles high data volume
+
+---
+
+## 🧰 Core Features
+
+✔ **Secure OAuth 2.0 authentication**  
+✔ **Multi-company support**  
+✔ **Webhook-based real-time updates**  
+✔ **Manual & Scheduled Sync** (Hourly / Daily / Weekly / Monthly)  
+✔ **Historical import for backlog data**  
+✔ **Duplicate prevention logic**  
+✔ **Error & Retry handling framework**  
+✔ **Detailed sync logs and progress monitoring**
+
+---
+
+## 🧑‍🤝‍🧑 Who Is This For?
+
+- 👨‍💼 Finance Managers & CFOs  
+- 🧾 Accountants & Auditors  
+- 🧑‍💻 ERPNext Admins  
+- 🏬 High-volume B2B & eCommerce businesses  
+- 💻 SaaS & recurring billing companies  
+
+### **Industries**
+🏭 Manufacturing  
+🛒 Retail & E-commerce  
+📦 Wholesale & Distribution  
+💻 IT & SaaS  
+🌍 Trading & Export / Import  
+
+---
+
+## 🧩 How It Works
+
+**Step 1 — Connect Xero**  
+Enter Client ID and Secret, complete OAuth authorization.
+
+**Step 2 — Configure Sync Rules**  
+Choose what and how frequently to sync.
+
+**Step 3 — Automatic Two-Way Sync**  
+Contacts, invoices, payments & voids flow between systems.
+
+**Step 4 — Monitor Logs**  
+Track progress and errors inside ERPNext.
+
+---
+
+## 📦 Installation
+
+### Install via Bench
 ```bash
-cd /path/to/your/frappe-bench
-bench get-app https://github.com/Akhilam-Inc/Xero_ERPNext_Integration.git
-bench --site <your-site-name> install-app xero_erpnext_integration
-bench migrate
+bench get-app https://github.com/Akhilam-Inc/xero_integration
+bench --site your-site-name install-app xero_integration
 ```
 
-See `docs/installation.md` for prerequisites and verification steps.
+---
 
-## Post-Installation Setup
+## 📜 License
 
-- Register a connected app in the Xero developer portal and capture credentials.
-- Complete the OAuth handshake inside `Xero Settings`.
-- Map ERPNext accounts, taxes, and items to the corresponding Xero records.
-- Enable the scheduler events you need (invoices, payments, voided invoices).
-- Confirm permissions and test with a non-production Xero organisation first.
-
-Additional guidance is available in `docs/post_installation.md`.
-
-## Quick Start
-
-1. Connect to Xero through the `Xero Settings` DocType.
-2. Trigger a contact sync to import reference data.
-3. Create and submit a sales invoice in ERPNext and verify it appears in Xero.
-4. Record a payment in Xero and pull it into ERPNext via the payment sync.
-5. Review `Xero API Log` for success or failure entries.
-
-Follow the step-by-step walkthrough in `docs/quick_start.md`.
-
-## Documentation
-
-- `docs/overview.md`
-- `docs/installation.md`
-- `docs/post_installation.md`
-- `docs/quick_start.md`
-- `docs/api_reference.md`
-- `docs/architecture.md`
-- `docs/code_structure.md`
-
-## API Reference
-
-Whitelisted Frappe methods and webhook endpoints are documented in `docs/api_reference.md`. Each entry includes the REST path, expected arguments, and authentication requirements for integrating with external systems or custom ERPNext scripts.
-
-## Architecture
-
-Core integration logic lives under `xero_erpnext_integration/apis/`, with schedulers driving recurring jobs and DocTypes handling configuration and logging. Consult `docs/architecture.md` for a deeper dive into components, data flow, and error handling.
-
-## Code Structure
-
-```
-xero_erpnext_integration/
-├── README.md
-├── license.txt
-├── pyproject.toml
-├── docs/
-│   ├── architecture.md
-│   ├── code_structure.md
-│   ├── installation.md
-│   ├── overview.md
-│   ├── post_installation.md
-│   └── quick_start.md
-├── xero_erpnext_integration/
-│   ├── __init__.py
-│   ├── config/
-│   │   └── __init__.py
-│   ├── fixtures/
-│   │   ├── custom_field.json
-│   │   └── property_setter.json
-│   ├── hooks.py
-│   ├── modules.txt
-│   ├── patches.txt
-│   ├── public/
-│   │   ├── css/
-│   │   ├── images/
-│   │   │   └── akhilam-logo.svg
-│   │   └── js/
-│   ├── templates/
-│   │   ├── __init__.py
-│   │   ├── includes/
-│   │   └── pages/
-│   │       └── __init__.py
-│   ├── www/
-│   │   └── xero-help.html
-│   └── xero_erpnext_integration/
-│       ├── __init__.py
-│       ├── apis/
-│       │   ├── base.py
-│       │   ├── connection.py
-│       │   ├── contact.py
-│       │   ├── invoice_sync.py
-│       │   ├── payment_entry.py
-│       │   ├── sales_invoice.py
-│       │   └── webhook.py
-│       ├── custom_scripts/
-│       │   ├── contact.js
-│       │   ├── contact.py
-│       │   ├── payment_entry.js
-│       │   ├── sales_invoice.js
-│       │   └── sales_invoice.py
-│       ├── doctype/
-│       │   ├── xero_api_log/
-│       │   │   ├── __init__.py
-│       │   │   ├── test_xero_api_log.py
-│       │   │   ├── xero_api_log.js
-│       │   │   ├── xero_api_log.json
-│       │   │   └── xero_api_log.py
-│       │   └── xero_settings/
-│       │       ├── __init__.py
-│       │       ├── test_xero_settings.py
-│       │       ├── xero_settings.js
-│       │       ├── xero_settings.json
-│       │       └── xero_settings.py
-│       ├── schedulers/
-│       │   └── voided_invoice_sync.py
-│       ├── workspace/
-│       │   └── xero_integration/
-│       │       └── xero_integration.json
-│       └── __pycache__/
-└── .git/
-```
-
-Key modules:
-
-- `apis/base.py` for shared API helpers
-- `apis/sales_invoice.py` for invoice sync workflows
-- `apis/payment_entry.py` for payment import and reconciliation
-- `apis/contact.py` for bidirectional contact sync
-- `schedulers/voided_invoice_sync.py` for voided invoice catch-up jobs
-
-## License
-
-```
 MIT License
 
 Copyright (c) 2025 Akhilam Inc
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights 
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is 
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
 ---
 
- Made with ❤️ by [Akhilam Inc](https://akhilaminc.com).
+## 🧑‍💻 Made With ❤️ by Akhilam Inc
+
+We build automation tooling and ERPNext extensions that help businesses scale with confidence.  
+🌐 https://akhilaminc.com  
+📩 support@akhilaminc.com  
+🚀 Automating financial workflows for global businesses.
