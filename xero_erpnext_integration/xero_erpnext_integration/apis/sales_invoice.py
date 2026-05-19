@@ -1,9 +1,8 @@
 import re
+from datetime import datetime
 
 import frappe
 from frappe import _
-from frappe.query_builder import DocType
-from frappe.query_builder.functions import Sum
 from frappe.utils import flt
 
 from .base import get_xero_client
@@ -13,30 +12,22 @@ from .base import get_xero_client
 def sync_invoice_payments():
 	"""Sync payment status from Xero and create payment entries for paid invoices"""
 	try:
-		# frappe.qb migration: ["is", "set"] → .isnotnull(), ["in", [...]] → .isin([...])
-		# frappe.qb bypasses ORM permission layer — appropriate for scheduler context (B3)
-		SalesInvoice = DocType("Sales Invoice")
-		unpaid_invoices = (
-			frappe.qb.from_(SalesInvoice)
-			.select(
-				SalesInvoice.name,
-				SalesInvoice.customer,
-				SalesInvoice.grand_total,
-				SalesInvoice.outstanding_amount,
-				SalesInvoice.custom_xero_invoice_number,
-				SalesInvoice.company,
-			)
-			.where(SalesInvoice.custom_xero_invoice_number.isnotnull())
-			.where(SalesInvoice.status.isin(["Draft", "Unpaid", "Overdue", "Partly Paid"]))
-			.where(SalesInvoice.workflow_state.isin(["Synced to Xero", "Submitted"]))
-			.run(as_dict=True)
+		# Migration guide: operator-value pairs in dict filters → 3-element list-of-lists
+		# OLD: filters={"custom_xero_invoice_number": ["is", "set"], "status": ["in", [...]]}
+		# NEW: filters=[["field", "operator", "value"], ...]
+		unpaid_invoices = frappe.get_all(
+			"Sales Invoice",
+			filters=[
+				["custom_xero_invoice_number", "is", "set"],
+				["status", "in", ["Draft", "Unpaid", "Overdue", "Partly Paid"]],
+				["workflow_state", "in", ["Synced to Xero", "Submitted"]],
+			],
+			fields=["name", "customer", "grand_total", "outstanding_amount", "custom_xero_invoice_number", "company"],
+			ignore_permissions=True,
 		)
 
 		if not unpaid_invoices:
-			return {
-				"status": "success",
-				"message": "No unpaid invoices found with Xero references"
-			}
+			return {"status": "success", "message": "No unpaid invoices found with Xero references"}
 
 		invoice_ids = [invoice.custom_xero_invoice_number for invoice in unpaid_invoices]
 		invoice_ids_str = ",".join(invoice_ids)
@@ -45,7 +36,6 @@ def sync_invoice_payments():
 		response = client.make_request("GET", f"/invoices?IDs={invoice_ids_str}")
 
 		xero_invoices = response.get("Invoices", [])
-
 		processed_invoices = []
 
 		for xero_invoice in xero_invoices:
@@ -64,11 +54,7 @@ def sync_invoice_payments():
 
 			if status in ["PAID", "AUTHORISED"] and amount_paid > 0:
 				# A9 fix: check payment_result before appending to processed list
-				payment_result = create_payment_entry_from_xero(
-					erpnext_invoice,
-					xero_invoice,
-					amount_paid
-				)
+				payment_result = create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid)
 				if payment_result and payment_result.get("status") == "success":
 					processed_invoices.append({
 						"invoice": erpnext_invoice.name,
@@ -78,15 +64,13 @@ def sync_invoice_payments():
 		return {
 			"status": "success",
 			"message": f"Processed {len(processed_invoices)} invoices",
-			"data": processed_invoices
+			"data": processed_invoices,
 		}
 
 	except Exception as e:
 		frappe.log_error(title="Xero Payment Sync", message=f"Error syncing invoice payments: {str(e)}")
-		return {
-			"status": "error",
-			"message": str(e)
-		}
+		return {"status": "error", "message": str(e)}
+
 
 def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 	"""Create payment entry in ERPNext based on Xero payment data"""
@@ -94,7 +78,9 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		invoice_id = xero_invoice.get("InvoiceID")
 		client = get_xero_client()
 
-		payments_response = client.make_request("GET", f"/Payments?where=Invoice.InvoiceID%3DGuid%28%22{invoice_id}%22%29")
+		payments_response = client.make_request(
+			"GET", f"/Payments?where=Invoice.InvoiceID%3DGuid%28%22{invoice_id}%22%29"
+		)
 		payments = payments_response.get("Payments", [])
 
 		if not payments:
@@ -102,34 +88,48 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 
 		sales_invoice = frappe.get_doc("Sales Invoice", erpnext_invoice.name)
 		try:
-			# B6 fix: use doc.get() instead of hasattr() — hasattr always returns True on Frappe docs
+			# B6 fix: use doc.get() instead of hasattr()
 			if sales_invoice.get("workflow_state") == "Synced to Xero":
 				sales_invoice.workflow_state = "Submitted"
 				# B4 fix: ignore_permissions — called from scheduler context
 				sales_invoice.save(ignore_permissions=True)
 				sales_invoice.submit()
-				# B5 fix: remove frappe.db.commit() — framework manages the transaction
+				# B5 fix: no frappe.db.commit() — framework manages the transaction
 		except Exception as workflow_error:
 			frappe.log_error(
 				title="Workflow State Change",
-				message=f"Error changing workflow state for {sales_invoice.name}: {str(workflow_error)}"
+				message=f"Error changing workflow state for {sales_invoice.name}: {str(workflow_error)}",
 			)
 
-		# C4 fix + frappe.qb migration: single JOIN query replaces two sequential get_all() calls.
-		# Uses Sum() aggregate (guide Rule 1 pattern) on the child table directly.
-		# frappe.qb bypasses ORM permissions — appropriate for scheduler context (B3/B4).
-		PaymentEntry = DocType("Payment Entry")
-		PaymentEntryRef = DocType("Payment Entry Reference")
-		result = (
-			frappe.qb.from_(PaymentEntry)
-			.join(PaymentEntryRef).on(PaymentEntryRef.parent == PaymentEntry.name)
-			.select(Sum(PaymentEntryRef.allocated_amount).as_("total_paid"))
-			.where(PaymentEntryRef.reference_doctype == "Sales Invoice")
-			.where(PaymentEntryRef.reference_name == sales_invoice.name)
-			.where(PaymentEntry.docstatus == 1)
-			.run()
+		# C4 fix: query Payment Entry Reference child table for existing payments.
+		# Migration guide: dict filters with operators → 3-element list-of-lists.
+		# Step 1: get parent PE names from the child table
+		existing_payment_refs = frappe.get_all(
+			"Payment Entry Reference",
+			filters=[
+				["reference_doctype", "=", "Sales Invoice"],
+				["reference_name", "=", sales_invoice.name],
+				["parenttype", "=", "Payment Entry"],
+			],
+			fields=["parent", "allocated_amount"],
+			ignore_permissions=True,
 		)
-		total_existing_payments = flt(result[0][0]) if result and result[0][0] is not None else flt(0)
+
+		existing_payment_names = [ref.parent for ref in existing_payment_refs]
+		total_existing_payments = flt(0)
+		if existing_payment_names:
+			# Step 2: filter only submitted entries
+			# Migration guide: ["in", [...]] dict operator → list-of-lists
+			submitted = frappe.get_all(
+				"Payment Entry",
+				filters=[
+					["name", "in", existing_payment_names],
+					["docstatus", "=", 1],
+				],
+				fields=["name", "paid_amount"],
+				ignore_permissions=True,
+			)
+			total_existing_payments = sum(flt(pe.paid_amount) for pe in submitted)
 
 		remaining_amount = flt(amount_paid) - total_existing_payments
 
@@ -140,10 +140,8 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		payment_date = latest_payment.get("Date", "")
 
 		if payment_date:
-			# A8 fix: import re moved to top of file
-			date_match = re.search(r'/Date\((\d+)', payment_date)
+			date_match = re.search(r"/Date\((\d+)", payment_date)
 			if date_match:
-				from datetime import datetime
 				timestamp = int(date_match.group(1)) / 1000
 				payment_date = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
 			else:
@@ -173,13 +171,14 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		elif company_doc.get("default_bank_account"):
 			paid_to_account = company_doc.default_bank_account
 		else:
-			# B3 fix: ignore_permissions
-			cash_accounts = frappe.get_all("Account",
-				filters={
-					"company": sales_invoice.company,
-					"account_type": ["in", ["Cash", "Bank"]],
-					"is_group": 0
-				},
+			# Migration guide: ["in", [...]] dict operator → list-of-lists
+			cash_accounts = frappe.get_all(
+				"Account",
+				filters=[
+					["company", "=", sales_invoice.company],
+					["account_type", "in", ["Cash", "Bank"]],
+					["is_group", "=", 0],
+				],
 				fields=["name"],
 				limit=1,
 				ignore_permissions=True,
@@ -190,7 +189,7 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		if not paid_to_account:
 			return {
 				"status": "error",
-				"message": f"No cash/bank account found for company {sales_invoice.company}"
+				"message": f"No cash/bank account found for company {sales_invoice.company}",
 			}
 
 		payment_entry.paid_to = paid_to_account
@@ -204,13 +203,14 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 					break
 
 		if not payment_entry.paid_from:
-			# B3 fix: ignore_permissions
-			receivable_accounts = frappe.get_all("Account",
-				filters={
-					"company": sales_invoice.company,
-					"account_type": "Receivable",
-					"is_group": 0
-				},
+			# Migration guide: simple equality filters — dict form is fine, using list for consistency
+			receivable_accounts = frappe.get_all(
+				"Account",
+				filters=[
+					["company", "=", sales_invoice.company],
+					["account_type", "=", "Receivable"],
+					["is_group", "=", 0],
+				],
 				fields=["name"],
 				limit=1,
 				ignore_permissions=True,
@@ -220,13 +220,13 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 			else:
 				return {
 					"status": "error",
-					"message": f"No receivable account found for company {sales_invoice.company}"
+					"message": f"No receivable account found for company {sales_invoice.company}",
 				}
 
 		payment_entry.append("references", {
 			"reference_doctype": "Sales Invoice",
 			"reference_name": sales_invoice.name,
-			"allocated_amount": remaining_amount
+			"allocated_amount": remaining_amount,
 		})
 
 		# B4 fix: ignore_permissions — called from scheduler context
@@ -236,15 +236,12 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		return {
 			"status": "success",
 			"message": f"Payment Entry {payment_entry.name} created",
-			"payment_entry": payment_entry.name
+			"payment_entry": payment_entry.name,
 		}
 
 	except Exception as e:
 		frappe.log_error(title="Xero Payment Entry Creation", message=f"Error creating payment entry: {str(e)}")
-		return {
-			"status": "error",
-			"message": str(e)
-		}
+		return {"status": "error", "message": str(e)}
 
 
 @frappe.whitelist()
@@ -284,25 +281,31 @@ def create_invoice(doc, method=None, update_invoice=False):
 
 		invoice_data = {
 			"Type": "ACCREC",
-			"Contact": {
-				"ContactID": contact_id
-			},
+			"Contact": {"ContactID": contact_id},
 			"InvoiceNumber": invoice.name,
 			"DateString": invoice.posting_date.strftime("%Y-%m-%d") if invoice.posting_date else None,
 			"DueDateString": invoice.due_date.strftime("%Y-%m-%d") if invoice.due_date else None,
 			"LineAmountTypes": "Exclusive",
 			"LineItems": line_items,
 			"Reference": invoice.name,
-			"Status": "AUTHORISED"
+			"Status": "AUTHORISED",
 		}
 
-		if invoice.currency and invoice.currency != frappe.get_cached_value("Company", invoice.company, "default_currency"):
+		if invoice.currency and invoice.currency != frappe.get_cached_value(
+			"Company", invoice.company, "default_currency"
+		):
 			invoice_data["CurrencyCode"] = invoice.currency
 
 		data = {"Invoices": [invoice_data]}
 		try:
-			if invoice.custom_xero_invoice_number and invoice.workflow_state == "Synced to Xero" and update_invoice:
-				response = client.make_request("POST", f"/Invoices/{invoice.custom_xero_invoice_number}", data=data)
+			if (
+				invoice.custom_xero_invoice_number
+				and invoice.workflow_state == "Synced to Xero"
+				and update_invoice
+			):
+				response = client.make_request(
+					"POST", f"/Invoices/{invoice.custom_xero_invoice_number}", data=data
+				)
 			else:
 				response = client.make_request("POST", "/Invoices", data=data)
 		except Exception as api_error:
@@ -311,22 +314,19 @@ def create_invoice(doc, method=None, update_invoice=False):
 
 		if response and "Invoices" in response:
 			xero_invoice = response["Invoices"][0]
-
 			return {
 				"status": "success",
 				"data": xero_invoice,
-				"message": f"Invoice created in Xero with ID: {xero_invoice.get('InvoiceID')}"
+				"message": f"Invoice created in Xero with ID: {xero_invoice.get('InvoiceID')}",
 			}
 
-		return {
-			"status": "error",
-			"message": "Failed to create invoice in Xero"
-		}
+		return {"status": "error", "message": "Failed to create invoice in Xero"}
 
 	except Exception as e:
-		# C7 fix: only log_error, do not also throw (throw internally logs too — double entries)
+		# C7 fix: log_error once — frappe.throw() logs internally too
 		frappe.log_error(title="Xero Create Invoice", message=f"Failed to create invoice in Xero: {str(e)}")
 		frappe.throw(_("Failed to create invoice in Xero: {0}").format(str(e)))
+
 
 @frappe.whitelist()
 def fetch_xero_contacts(contact_person):
@@ -344,9 +344,11 @@ def fetch_xero_contacts(contact_person):
 			xero_name = contact.get("Name", "").lower()
 			contact_name_lower = contact_name.lower()
 
-			if (xero_name in contact_name_lower or
-				contact_name_lower in xero_name or
-				any(word in xero_name for word in contact_name_lower.split() if len(word) > 2)):
+			if (
+				xero_name in contact_name_lower
+				or contact_name_lower in xero_name
+				or any(word in xero_name for word in contact_name_lower.split() if len(word) > 2)
+			):
 				similar_contacts.append(contact)
 
 		return similar_contacts
@@ -354,6 +356,7 @@ def fetch_xero_contacts(contact_person):
 	except Exception as e:
 		frappe.log_error(title="Fetch Xero Contacts", message=f"Failed to fetch Xero contacts: {str(e)}")
 		return []
+
 
 @frappe.whitelist()
 def create_contact_and_map(contact_person, sales_invoice):
@@ -381,18 +384,8 @@ def create_contact_and_map(contact_person, sales_invoice):
 			"AccountNumber": contact_doc.custom_account_number or contact_doc.name,
 			"IsCustomer": is_customer,
 			"IsSupplier": is_supplier,
-			"Addresses": [
-				{
-					"AddressType": "STREET",
-					"AddressLine1": contact_doc.address or "",
-				}
-			],
-			"Phones": [
-				{
-					"PhoneType": "DEFAULT",
-					"PhoneNumber": contact_doc.phone or contact_doc.mobile_no or ""
-				}
-			]
+			"Addresses": [{"AddressType": "STREET", "AddressLine1": contact_doc.address or ""}],
+			"Phones": [{"PhoneType": "DEFAULT", "PhoneNumber": contact_doc.phone or contact_doc.mobile_no or ""}],
 		}
 
 		data = {"Contacts": [contact_data]}
@@ -400,27 +393,20 @@ def create_contact_and_map(contact_person, sales_invoice):
 
 		if response and response.get("Contacts"):
 			contact_id = response["Contacts"][0].get("ContactID")
-
 			map_result = map_contact_to_xero(contact_id, contact_person, sales_invoice)
-
 			if map_result:
 				return {
 					"status": "success",
 					"contact_id": contact_id,
-					"message": "Contact created and mapped successfully"
+					"message": "Contact created and mapped successfully",
 				}
 
-		return {
-			"status": "error",
-			"message": "Failed to create contact in Xero"
-		}
+		return {"status": "error", "message": "Failed to create contact in Xero"}
 
 	except Exception as e:
 		frappe.log_error(title="Create Contact and Map", message=f"Failed to create and map contact: {str(e)}")
-		return {
-			"status": "error",
-			"message": str(e)
-		}
+		return {"status": "error", "message": str(e)}
+
 
 @frappe.whitelist()
 def map_contact_to_xero(contact_id, contact_person, sales_invoice):
@@ -441,6 +427,7 @@ def map_contact_to_xero(contact_id, contact_person, sales_invoice):
 		frappe.log_error(title="Map Contact to Xero", message=f"Failed to map contact: {str(e)}")
 		return False
 
+
 @frappe.whitelist()
 def cancel_invoice_in_xero(xero_invoice_id):
 	"""Cancel/void an invoice in Xero"""
@@ -450,10 +437,7 @@ def cancel_invoice_in_xero(xero_invoice_id):
 		response = client.make_request("GET", f"/Invoices/{xero_invoice_id}")
 
 		if not response or "Invoices" not in response:
-			return {
-				"status": "error",
-				"message": "Invoice not found in Xero"
-			}
+			return {"status": "error", "message": "Invoice not found in Xero"}
 
 		current_invoice = response["Invoices"][0]
 		current_status = current_invoice.get("Status")
@@ -461,39 +445,28 @@ def cancel_invoice_in_xero(xero_invoice_id):
 		if current_status in ["PAID", "VOIDED"]:
 			return {
 				"status": "info",
-				"message": f"Invoice cannot be cancelled as it is already {current_status}"
+				"message": f"Invoice cannot be cancelled as it is already {current_status}",
 			}
 
-		invoice_data = {
-			"InvoiceID": xero_invoice_id,
-			"Status": "VOIDED"
-		}
-
-		data = {"Invoices": [invoice_data]}
+		data = {"Invoices": [{"InvoiceID": xero_invoice_id, "Status": "VOIDED"}]}
 		response = client.make_request("POST", "/Invoices", data=data)
 
 		if response and "Invoices" in response:
-			voided_invoice = response["Invoices"][0]
 			return {
 				"status": "success",
 				"message": f"Invoice {xero_invoice_id} cancelled successfully in Xero",
-				"data": voided_invoice
+				"data": response["Invoices"][0],
 			}
 
-		return {
-			"status": "error",
-			"message": "Failed to cancel invoice in Xero"
-		}
+		return {"status": "error", "message": "Failed to cancel invoice in Xero"}
 
 	except Exception as e:
 		frappe.log_error(
 			title="Xero Cancel Invoice",
-			message=f"Failed to cancel invoice {xero_invoice_id} in Xero: {str(e)}"
+			message=f"Failed to cancel invoice {xero_invoice_id} in Xero: {str(e)}",
 		)
-		return {
-			"status": "error",
-			"message": str(e)
-		}
+		return {"status": "error", "message": str(e)}
+
 
 @frappe.whitelist()
 def get_customer_contact_id(customer):
@@ -503,14 +476,11 @@ def get_customer_contact_id(customer):
 		if customer_doc.get("custom_contact_id"):
 			return customer_doc.get("custom_contact_id")
 
-		dynamic_links = frappe.get_all("Dynamic Link",
-			filters={
-				"link_doctype": "Customer",
-				"link_name": customer,
-				"parenttype": "Contact"
-			},
+		dynamic_links = frappe.get_all(
+			"Dynamic Link",
+			filters={"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"},
 			fields=["parent"],
-			limit=1
+			limit=1,
 		)
 
 		if dynamic_links:
@@ -519,5 +489,5 @@ def get_customer_contact_id(customer):
 			return contact.get("custom_contact_id")
 
 		return None
-	except Exception as e:
+	except Exception:
 		frappe.throw(_("Error getting contact id for the selected customer"))
