@@ -69,9 +69,7 @@ class TestCustomFieldFixtures(FrappeTestCase):
 		self.assertEqual(allow_on_submit, 1, "custom_do_not_sync_to_xero must allow_on_submit=1")
 
 	def test_customer_contact_id_is_read_only(self):
-		read_only = frappe.db.get_value(
-			"Custom Field", "Customer-custom_contact_id", "read_only"
-		)
+		read_only = frappe.db.get_value("Custom Field", "Customer-custom_contact_id", "read_only")
 		self.assertEqual(read_only, 1, "Customer-custom_contact_id should be read_only")
 
 

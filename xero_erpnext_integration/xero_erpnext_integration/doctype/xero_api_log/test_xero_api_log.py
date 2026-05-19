@@ -11,7 +11,8 @@ class TestXeroAPILog(FrappeTestCase):
 	def test_naming_rule_is_expression_not_old_style(self):
 		naming_rule = frappe.db.get_value("DocType", "Xero API Log", "naming_rule")
 		self.assertEqual(
-			naming_rule, "Expression",
+			naming_rule,
+			"Expression",
 			"naming_rule must be 'Expression', not 'Expression (old style)' — old style is removed in v16",
 		)
 
@@ -21,14 +22,16 @@ class TestXeroAPILog(FrappeTestCase):
 		self.assertIn("XR", autoname, "autoname should use XR prefix")
 
 	def test_can_create_log_entry(self):
-		log = frappe.get_doc({
-			"doctype": "Xero API Log",
-			"api_method": "GET",
-			"api_url": "https://api.xero.com/api.xro/2.0/Invoices",
-			"message": "Success",
-			"status_code": "200",
-			"timestamp": frappe.utils.now_datetime(),
-		}).insert(ignore_permissions=True)
+		log = frappe.get_doc(
+			{
+				"doctype": "Xero API Log",
+				"api_method": "GET",
+				"api_url": "https://api.xero.com/api.xro/2.0/Invoices",
+				"message": "Success",
+				"status_code": "200",
+				"timestamp": frappe.utils.now_datetime(),
+			}
+		).insert(ignore_permissions=True)
 
 		self.assertTrue(log.name.startswith("XR"), f"Log name '{log.name}' should start with XR")
 

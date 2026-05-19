@@ -80,7 +80,9 @@ def get_account_code(account_name):
 		return "880"  # Default bank account code
 
 	except Exception as e:
-		frappe.log_error(title="Get Account Code", message=f"Error getting account code for {account_name}: {str(e)}")
+		frappe.log_error(
+			title="Get Account Code", message=f"Error getting account code for {account_name}: {str(e)}"
+		)
 		return None
 
 
@@ -104,7 +106,7 @@ def get_customer_contact_id(customer):
 	except Exception as e:
 		frappe.log_error(
 			title="Get Customer Contact ID",
-			message=f"Error getting contact id for customer {customer}: {str(e)}"
+			message=f"Error getting contact id for customer {customer}: {str(e)}",
 		)
 		return None
 

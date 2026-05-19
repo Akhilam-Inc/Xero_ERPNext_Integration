@@ -26,12 +26,13 @@ def _make_doc(**kwargs):
 # before_submit
 # ---------------------------------------------------------------------------
 
-class TestBeforeSubmit(FrappeTestCase):
 
+class TestBeforeSubmit(FrappeTestCase):
 	def test_skips_validation_when_do_not_sync_enabled(self):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			before_submit,
 		)
+
 		doc = _make_doc(custom_do_not_sync_to_xero=1, custom_contact_id=None, customer=None)
 		# Should not raise even though customer is None
 		before_submit(doc)
@@ -40,6 +41,7 @@ class TestBeforeSubmit(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			before_submit,
 		)
+
 		doc = _make_doc(custom_contact_id="already-mapped")
 		before_submit(doc)  # Should not raise
 
@@ -47,6 +49,7 @@ class TestBeforeSubmit(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			before_submit,
 		)
+
 		doc = _make_doc(customer=None, contact_person=None, custom_contact_id=None)
 		self.assertRaises(frappe.ValidationError, before_submit, doc)
 
@@ -54,6 +57,7 @@ class TestBeforeSubmit(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			before_submit,
 		)
+
 		doc = _make_doc(customer="_Test Customer", contact_person="Some Contact", custom_contact_id=None)
 		self.assertRaises(frappe.ValidationError, before_submit, doc)
 
@@ -62,12 +66,13 @@ class TestBeforeSubmit(FrappeTestCase):
 # on_cancel
 # ---------------------------------------------------------------------------
 
-class TestOnCancel(FrappeTestCase):
 
+class TestOnCancel(FrappeTestCase):
 	def test_skips_when_no_xero_invoice_number(self):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			on_cancel,
 		)
+
 		doc = _make_doc(custom_xero_invoice_number=None)
 		# Should return silently, no API call
 		on_cancel(doc)
@@ -76,6 +81,7 @@ class TestOnCancel(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			on_cancel,
 		)
+
 		doc = _make_doc(custom_xero_invoice_number="xero-123", custom_do_not_sync_to_xero=1)
 		on_cancel(doc)  # Should return silently
 
@@ -83,6 +89,7 @@ class TestOnCancel(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			on_cancel,
 		)
+
 		doc = _make_doc(custom_xero_invoice_number="xero-invoice-abc")
 
 		with patch(
@@ -97,6 +104,7 @@ class TestOnCancel(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice import (
 			on_cancel,
 		)
+
 		doc = _make_doc(custom_xero_invoice_number="xero-invoice-abc")
 
 		with patch(

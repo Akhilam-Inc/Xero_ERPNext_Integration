@@ -7,9 +7,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, today
 
-XERO_CLIENT_PATH = (
-	"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_xero_client"
-)
+XERO_CLIENT_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_xero_client"
 MOCK_CONTACT_ID = "xero-contact-uuid-001"
 MOCK_INVOICE_ID = "xero-invoice-uuid-001"
 
@@ -24,38 +22,45 @@ def _mock_client(make_request_return=None):
 # get_customer_contact_id
 # ---------------------------------------------------------------------------
 
-class TestGetCustomerContactId(FrappeTestCase):
 
+class TestGetCustomerContactId(FrappeTestCase):
 	def setUp(self):
 		# Customer whose contact_id is stored directly on the Customer doc
-		self.direct_customer = frappe.get_doc({
-			"doctype": "Customer",
-			"customer_name": "_XeroTest Direct",
-			"customer_type": "Individual",
-			"customer_group": "All Customer Groups",
-			"territory": "All Territories",
-		}).insert(ignore_permissions=True)
+		self.direct_customer = frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": "_XeroTest Direct",
+				"customer_type": "Individual",
+				"customer_group": "All Customer Groups",
+				"territory": "All Territories",
+			}
+		).insert(ignore_permissions=True)
 		frappe.db.set_value("Customer", self.direct_customer.name, "custom_contact_id", MOCK_CONTACT_ID)
 
 		# Customer whose contact_id comes through a Contact linked via Dynamic Link
-		self.linked_customer = frappe.get_doc({
-			"doctype": "Customer",
-			"customer_name": "_XeroTest Linked",
-			"customer_type": "Individual",
-			"customer_group": "All Customer Groups",
-			"territory": "All Territories",
-		}).insert(ignore_permissions=True)
-		self.contact = frappe.get_doc({
-			"doctype": "Contact",
-			"first_name": "_XeroTest",
-			"links": [{"link_doctype": "Customer", "link_name": self.linked_customer.name}],
-		}).insert(ignore_permissions=True)
+		self.linked_customer = frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": "_XeroTest Linked",
+				"customer_type": "Individual",
+				"customer_group": "All Customer Groups",
+				"territory": "All Territories",
+			}
+		).insert(ignore_permissions=True)
+		self.contact = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": "_XeroTest",
+				"links": [{"link_doctype": "Customer", "link_name": self.linked_customer.name}],
+			}
+		).insert(ignore_permissions=True)
 		frappe.db.set_value("Contact", self.contact.name, "custom_contact_id", "linked-id-999")
 
 	def test_returns_contact_id_directly_from_customer(self):
 		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
 			get_customer_contact_id,
 		)
+
 		result = get_customer_contact_id(self.direct_customer.name)
 		self.assertEqual(result, MOCK_CONTACT_ID)
 
@@ -63,6 +68,7 @@ class TestGetCustomerContactId(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
 			get_customer_contact_id,
 		)
+
 		result = get_customer_contact_id(self.linked_customer.name)
 		self.assertEqual(result, "linked-id-999")
 
@@ -70,13 +76,16 @@ class TestGetCustomerContactId(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
 			get_customer_contact_id,
 		)
-		orphan = frappe.get_doc({
-			"doctype": "Customer",
-			"customer_name": "_XeroTest Orphan",
-			"customer_type": "Individual",
-			"customer_group": "All Customer Groups",
-			"territory": "All Territories",
-		}).insert(ignore_permissions=True)
+
+		orphan = frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": "_XeroTest Orphan",
+				"customer_type": "Individual",
+				"customer_group": "All Customer Groups",
+				"territory": "All Territories",
+			}
+		).insert(ignore_permissions=True)
 		result = get_customer_contact_id(orphan.name)
 		self.assertIsNone(result)
 
@@ -85,8 +94,8 @@ class TestGetCustomerContactId(FrappeTestCase):
 # create_invoice
 # ---------------------------------------------------------------------------
 
-class TestCreateInvoice(FrappeTestCase):
 
+class TestCreateInvoice(FrappeTestCase):
 	def _make_mock_invoice(self, **overrides):
 		"""Return a MagicMock that looks like a Sales Invoice doc."""
 		doc = MagicMock()
@@ -115,11 +124,15 @@ class TestCreateInvoice(FrappeTestCase):
 		mock_factory.return_value = _mock_client()
 		mock_invoice = self._make_mock_invoice()
 
-		with patch(
-			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
-			return_value=None,
-		), patch("frappe.get_doc", return_value=mock_invoice):
+		with (
+			patch(
+				"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
+				return_value=None,
+			),
+			patch("frappe.get_doc", return_value=mock_invoice),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import create_invoice
+
 			self.assertRaises(frappe.ValidationError, create_invoice, mock_invoice.name)
 
 	@patch(XERO_CLIENT_PATH)
@@ -127,11 +140,15 @@ class TestCreateInvoice(FrappeTestCase):
 		mock_factory.return_value = _mock_client()
 		mock_invoice = self._make_mock_invoice(posting_date=None)
 
-		with patch(
-			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
-			return_value=MOCK_CONTACT_ID,
-		), patch("frappe.get_doc", return_value=mock_invoice):
+		with (
+			patch(
+				"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
+				return_value=MOCK_CONTACT_ID,
+			),
+			patch("frappe.get_doc", return_value=mock_invoice),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import create_invoice
+
 			self.assertRaises(frappe.ValidationError, create_invoice, mock_invoice.name)
 
 	@patch(XERO_CLIENT_PATH)
@@ -139,26 +156,34 @@ class TestCreateInvoice(FrappeTestCase):
 		mock_factory.return_value = _mock_client()
 		mock_invoice = self._make_mock_invoice(due_date=None)
 
-		with patch(
-			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
-			return_value=MOCK_CONTACT_ID,
-		), patch("frappe.get_doc", return_value=mock_invoice):
+		with (
+			patch(
+				"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
+				return_value=MOCK_CONTACT_ID,
+			),
+			patch("frappe.get_doc", return_value=mock_invoice),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import create_invoice
+
 			self.assertRaises(frappe.ValidationError, create_invoice, mock_invoice.name)
 
 	@patch(XERO_CLIENT_PATH)
 	def test_successful_create_returns_invoice_id(self, mock_factory):
-		mock_factory.return_value = _mock_client({
-			"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "AUTHORISED"}]
-		})
+		mock_factory.return_value = _mock_client(
+			{"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "AUTHORISED"}]}
+		)
 		mock_invoice = self._make_mock_invoice()
 
-		with patch(
-			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
-			return_value=MOCK_CONTACT_ID,
-		), patch("frappe.get_doc", return_value=mock_invoice), \
-		   patch("frappe.get_cached_value", return_value="USD"):
+		with (
+			patch(
+				"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
+				return_value=MOCK_CONTACT_ID,
+			),
+			patch("frappe.get_doc", return_value=mock_invoice),
+			patch("frappe.get_cached_value", return_value="USD"),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import create_invoice
+
 			result = create_invoice(mock_invoice.name)
 
 		self.assertEqual(result["status"], "success")
@@ -166,21 +191,23 @@ class TestCreateInvoice(FrappeTestCase):
 
 	@patch(XERO_CLIENT_PATH)
 	def test_updates_existing_invoice_when_synced(self, mock_factory):
-		mock_client = _mock_client({
-			"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "AUTHORISED"}]
-		})
+		mock_client = _mock_client({"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "AUTHORISED"}]})
 		mock_factory.return_value = mock_client
 		mock_invoice = self._make_mock_invoice(
 			custom_xero_invoice_number=MOCK_INVOICE_ID,
 			workflow_state="Synced to Xero",
 		)
 
-		with patch(
-			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
-			return_value=MOCK_CONTACT_ID,
-		), patch("frappe.get_doc", return_value=mock_invoice), \
-		   patch("frappe.get_cached_value", return_value="USD"):
+		with (
+			patch(
+				"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
+				return_value=MOCK_CONTACT_ID,
+			),
+			patch("frappe.get_doc", return_value=mock_invoice),
+			patch("frappe.get_cached_value", return_value="USD"),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import create_invoice
+
 			create_invoice(mock_invoice.name, update_invoice=True)
 
 		# Assert PUT-style URL was used (update, not create)
@@ -192,23 +219,29 @@ class TestCreateInvoice(FrappeTestCase):
 # cancel_invoice_in_xero
 # ---------------------------------------------------------------------------
 
-class TestCancelInvoiceInXero(FrappeTestCase):
 
+class TestCancelInvoiceInXero(FrappeTestCase):
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_info_when_already_paid(self, mock_factory):
-		mock_factory.return_value = _mock_client({
-			"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "PAID"}]
-		})
-		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import cancel_invoice_in_xero
+		mock_factory.return_value = _mock_client(
+			{"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "PAID"}]}
+		)
+		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
+			cancel_invoice_in_xero,
+		)
+
 		result = cancel_invoice_in_xero(MOCK_INVOICE_ID)
 		self.assertEqual(result["status"], "info")
 
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_info_when_already_voided(self, mock_factory):
-		mock_factory.return_value = _mock_client({
-			"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "VOIDED"}]
-		})
-		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import cancel_invoice_in_xero
+		mock_factory.return_value = _mock_client(
+			{"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "VOIDED"}]}
+		)
+		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
+			cancel_invoice_in_xero,
+		)
+
 		result = cancel_invoice_in_xero(MOCK_INVOICE_ID)
 		self.assertEqual(result["status"], "info")
 
@@ -220,14 +253,20 @@ class TestCancelInvoiceInXero(FrappeTestCase):
 			{"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "VOIDED"}]},
 		]
 		mock_factory.return_value = mock_client
-		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import cancel_invoice_in_xero
+		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
+			cancel_invoice_in_xero,
+		)
+
 		result = cancel_invoice_in_xero(MOCK_INVOICE_ID)
 		self.assertEqual(result["status"], "success")
 
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_error_when_invoice_not_found(self, mock_factory):
 		mock_factory.return_value = _mock_client({})
-		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import cancel_invoice_in_xero
+		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
+			cancel_invoice_in_xero,
+		)
+
 		result = cancel_invoice_in_xero(MOCK_INVOICE_ID)
 		self.assertEqual(result["status"], "error")
 
@@ -236,24 +275,29 @@ class TestCancelInvoiceInXero(FrappeTestCase):
 # fetch_xero_contacts
 # ---------------------------------------------------------------------------
 
-class TestFetchXeroContacts(FrappeTestCase):
 
+class TestFetchXeroContacts(FrappeTestCase):
 	def setUp(self):
-		self.contact = frappe.get_doc({
-			"doctype": "Contact",
-			"first_name": "John",
-			"last_name": "Smith",
-		}).insert(ignore_permissions=True)
+		self.contact = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": "John",
+				"last_name": "Smith",
+			}
+		).insert(ignore_permissions=True)
 
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_matching_contacts(self, mock_factory):
-		mock_factory.return_value = _mock_client({
-			"Contacts": [
-				{"ContactID": "c1", "Name": "John Smith", "EmailAddress": "john@test.com", "Phones": []},
-				{"ContactID": "c2", "Name": "Completely Different", "EmailAddress": "", "Phones": []},
-			]
-		})
+		mock_factory.return_value = _mock_client(
+			{
+				"Contacts": [
+					{"ContactID": "c1", "Name": "John Smith", "EmailAddress": "john@test.com", "Phones": []},
+					{"ContactID": "c2", "Name": "Completely Different", "EmailAddress": "", "Phones": []},
+				]
+			}
+		)
 		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import fetch_xero_contacts
+
 		results = fetch_xero_contacts(self.contact.name)
 		contact_ids = [c["ContactID"] for c in results]
 		self.assertIn("c1", contact_ids)
@@ -261,10 +305,11 @@ class TestFetchXeroContacts(FrappeTestCase):
 
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_empty_list_when_no_matches(self, mock_factory):
-		mock_factory.return_value = _mock_client({
-			"Contacts": [{"ContactID": "c9", "Name": "ZZZZZ Nobody", "EmailAddress": "", "Phones": []}]
-		})
+		mock_factory.return_value = _mock_client(
+			{"Contacts": [{"ContactID": "c9", "Name": "ZZZZZ Nobody", "EmailAddress": "", "Phones": []}]}
+		)
 		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import fetch_xero_contacts
+
 		results = fetch_xero_contacts(self.contact.name)
 		self.assertEqual(results, [])
 
@@ -273,21 +318,25 @@ class TestFetchXeroContacts(FrappeTestCase):
 # map_contact_to_xero
 # ---------------------------------------------------------------------------
 
-class TestMapContactToXero(FrappeTestCase):
 
+class TestMapContactToXero(FrappeTestCase):
 	def setUp(self):
-		self.customer = frappe.get_doc({
-			"doctype": "Customer",
-			"customer_name": "_XeroTest MapContact",
-			"customer_type": "Individual",
-			"customer_group": "All Customer Groups",
-			"territory": "All Territories",
-		}).insert(ignore_permissions=True)
-		self.contact = frappe.get_doc({
-			"doctype": "Contact",
-			"first_name": "_XeroTest",
-			"links": [{"link_doctype": "Customer", "link_name": self.customer.name}],
-		}).insert(ignore_permissions=True)
+		self.customer = frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": "_XeroTest MapContact",
+				"customer_type": "Individual",
+				"customer_group": "All Customer Groups",
+				"territory": "All Territories",
+			}
+		).insert(ignore_permissions=True)
+		self.contact = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": "_XeroTest",
+				"links": [{"link_doctype": "Customer", "link_name": self.customer.name}],
+			}
+		).insert(ignore_permissions=True)
 
 	def test_sets_contact_id_on_contact_doc(self):
 		from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import map_contact_to_xero
@@ -295,9 +344,7 @@ class TestMapContactToXero(FrappeTestCase):
 		with patch("frappe.get_doc") as mock_get_doc:
 			mock_contact = MagicMock()
 			mock_sinv = MagicMock()
-			mock_get_doc.side_effect = lambda dt, name: (
-				mock_contact if dt == "Contact" else mock_sinv
-			)
+			mock_get_doc.side_effect = lambda dt, name: (mock_contact if dt == "Contact" else mock_sinv)
 			result = map_contact_to_xero("contact-xero-id", self.contact.name, "SINV-FAKE")
 
 		self.assertTrue(result)
@@ -318,42 +365,56 @@ class TestMapContactToXero(FrappeTestCase):
 # sync_invoice_payments
 # ---------------------------------------------------------------------------
 
-class TestSyncInvoicePayments(FrappeTestCase):
 
+class TestSyncInvoicePayments(FrappeTestCase):
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_success_when_no_invoices(self, mock_factory):
 		mock_factory.return_value = _mock_client()
 		with patch("frappe.get_all", return_value=[]):
-			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import sync_invoice_payments
+			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
+				sync_invoice_payments,
+			)
+
 			result = sync_invoice_payments()
 		self.assertEqual(result["status"], "success")
 		self.assertIn("No unpaid", result["message"])
 
 	@patch(XERO_CLIENT_PATH)
 	def test_processes_paid_invoices_from_xero(self, mock_factory):
-		fake_invoices = [{
-			"name": "SINV-0001",
-			"customer": "_Test Customer",
-			"grand_total": 500,
-			"outstanding_amount": 500,
-			"custom_xero_invoice_number": MOCK_INVOICE_ID,
-			"company": "_Test Company",
-		}]
-		mock_client = _mock_client({
-			"Invoices": [{
-				"InvoiceID": MOCK_INVOICE_ID,
-				"Status": "PAID",
-				"AmountPaid": 500,
-			}]
-		})
+		fake_invoices = [
+			{
+				"name": "SINV-0001",
+				"customer": "_Test Customer",
+				"grand_total": 500,
+				"outstanding_amount": 500,
+				"custom_xero_invoice_number": MOCK_INVOICE_ID,
+				"company": "_Test Company",
+			}
+		]
+		mock_client = _mock_client(
+			{
+				"Invoices": [
+					{
+						"InvoiceID": MOCK_INVOICE_ID,
+						"Status": "PAID",
+						"AmountPaid": 500,
+					}
+				]
+			}
+		)
 		mock_factory.return_value = mock_client
 
-		with patch("frappe.get_all", return_value=fake_invoices), \
-			 patch(
+		with (
+			patch("frappe.get_all", return_value=fake_invoices),
+			patch(
 				"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.create_payment_entry_from_xero",
 				return_value={"status": "success"},
-			 ):
-			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import sync_invoice_payments
+			),
+		):
+			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
+				sync_invoice_payments,
+			)
+
 			result = sync_invoice_payments()
 
 		self.assertEqual(result["status"], "success")
@@ -362,20 +423,25 @@ class TestSyncInvoicePayments(FrappeTestCase):
 
 	@patch(XERO_CLIENT_PATH)
 	def test_skips_invoices_not_in_xero_response(self, mock_factory):
-		fake_invoices = [{
-			"name": "SINV-0002",
-			"customer": "_Test Customer",
-			"grand_total": 200,
-			"outstanding_amount": 200,
-			"custom_xero_invoice_number": "different-id",
-			"company": "_Test Company",
-		}]
-		mock_factory.return_value = _mock_client({
-			"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "PAID", "AmountPaid": 200}]
-		})
+		fake_invoices = [
+			{
+				"name": "SINV-0002",
+				"customer": "_Test Customer",
+				"grand_total": 200,
+				"outstanding_amount": 200,
+				"custom_xero_invoice_number": "different-id",
+				"company": "_Test Company",
+			}
+		]
+		mock_factory.return_value = _mock_client(
+			{"Invoices": [{"InvoiceID": MOCK_INVOICE_ID, "Status": "PAID", "AmountPaid": 200}]}
+		)
 
 		with patch("frappe.get_all", return_value=fake_invoices):
-			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import sync_invoice_payments
+			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import (
+				sync_invoice_payments,
+			)
+
 			result = sync_invoice_payments()
 
 		self.assertEqual(result["status"], "success")
