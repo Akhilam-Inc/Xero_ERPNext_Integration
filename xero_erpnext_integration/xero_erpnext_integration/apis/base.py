@@ -31,12 +31,13 @@ class XeroAPIClient:
 		self.connections_url = "https://api.xero.com/connections"
 
 		self.client_id = self.settings.client_id
-		self.client_secret = self.settings.get_password("client_secret")
-		self.redirect_uri = self.settings.redirect_uri
+		self.client_secret = self._safe_get_password("client_secret")
+		# Use stored redirect_uri if set; otherwise derive from site URL (tunnel or host_name in site config)
+		self.redirect_uri = self.settings.redirect_uri or frappe.utils.get_url("/app/xero-settings")
 		self.scope = "accounting.transactions accounting.contacts accounting.settings offline_access"
 
-		self.access_token = self.settings.get_password("access_token")
-		self.refresh_token = self.settings.get_password("refresh_token")
+		self.access_token = self._safe_get_password("access_token")
+		self.refresh_token = self._safe_get_password("refresh_token")
 		self.tenant_id = self.settings.tenant_id
 
 		self.headers = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -46,6 +47,13 @@ class XeroAPIClient:
 
 		if self.tenant_id:
 			self.headers["Xero-Tenant-Id"] = self.tenant_id
+
+	def _safe_get_password(self, field):
+		"""Return the decrypted password field value, or None if not yet set."""
+		try:
+			return self.settings.get_password(field) or None
+		except Exception:
+			return None
 
 	def get_authorization_url(self, state=None):
 		"""Generate OAuth 2.0 authorization URL"""

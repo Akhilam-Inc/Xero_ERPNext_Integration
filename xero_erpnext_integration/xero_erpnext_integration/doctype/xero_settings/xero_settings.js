@@ -1,5 +1,11 @@
 frappe.ui.form.on("Xero Settings", {
 	refresh: function (frm) {
+		// Auto-populate redirect_uri from the current site URL if not already set
+		if (!frm.doc.redirect_uri) {
+			const siteUrl = window.location.origin;
+			frm.set_value("redirect_uri", siteUrl + "/app/xero-settings");
+		}
+
 		// Handle authorization callback
 		const urlParams = new URLSearchParams(window.location.search);
 		const code = urlParams.get("code");
