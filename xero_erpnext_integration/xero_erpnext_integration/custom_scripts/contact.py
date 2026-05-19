@@ -37,5 +37,5 @@ def send_contact_to_xero(doc_name):
 
 		except Exception as e:
 			# Reset the checkbox if there's an error
-			frappe.log_error(f"Xero Contact Creation Error: {str(e)}")
+			frappe.log_error(title="Xero Contact Creation Error", message=str(e))
 			frappe.throw(_("Error creating contact in Xero: {0}").format(str(e)))

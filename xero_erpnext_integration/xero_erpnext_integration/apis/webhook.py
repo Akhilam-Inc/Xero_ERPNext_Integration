@@ -13,11 +13,8 @@ def webhook():
 	try:
 		request = frappe.local.request
 
-		# Handle GET request for "intent to receive" challenge
 		if request.method == "GET":
 			return handle_intent_to_receive()
-
-		# Handle POST request for actual webhook events
 		elif request.method == "POST":
 			return handle_webhook_event()
 
@@ -25,7 +22,8 @@ def webhook():
 		return "Method Not Allowed"
 
 	except Exception as e:
-		frappe.log_error(f"Xero Webhook Error: {str(e)}", "Xero Webhook Handler")
+		# B1 fix: keyword args for frappe.log_error throughout this file
+		frappe.log_error(title="Xero Webhook Handler", message=f"Xero Webhook Error: {str(e)}")
 		frappe.local.response.http_status_code = 500
 		return "Internal Server Error"
 
@@ -35,17 +33,15 @@ def handle_intent_to_receive():
 	try:
 		request = frappe.local.request
 
-		# Get the challenge parameter from query string
 		challenge = request.args.get("challenge")
 		if not challenge:
 			frappe.local.response.http_status_code = 400
 			return "Bad Request"
 
-		# Return the challenge value directly - Xero expects plain text response
 		return challenge
 
 	except Exception as e:
-		frappe.log_error(f"Error handling intent to receive: {str(e)}", "Xero Webhook")
+		frappe.log_error(title="Xero Webhook", message=f"Error handling intent to receive: {str(e)}")
 		frappe.local.response.http_status_code = 500
 		return "Internal Server Error"
 
@@ -54,10 +50,9 @@ def handle_webhook_event():
 	"""Handle actual webhook events (POST request)"""
 	try:
 		settings = frappe.get_single("Xero Settings")
-		webhook_key = settings.webhook_secret
+		webhook_key = settings.get_password("webhook_secret")
 		request = frappe.local.request
 
-		# Verify webhook signature
 		provided_signature = request.headers.get("X-Xero-Signature")
 		if not provided_signature:
 			frappe.local.response.http_status_code = 401
@@ -70,12 +65,9 @@ def handle_webhook_event():
 			frappe.local.response.http_status_code = 401
 			return "Unauthorized"
 
-		# Process webhook payload
 		try:
-			# Try calling json() method first
 			req_data = request.json() if callable(request.json) else request.json
 		except (ValueError, AttributeError):
-			# Fallback to getting json data from request
 			req_data = frappe.local.form_dict
 
 		if req_data.get("events"):
@@ -86,7 +78,7 @@ def handle_webhook_event():
 		return "OK"
 
 	except Exception as e:
-		frappe.log_error(f"Error handling webhook event: {str(e)}", "Xero Webhook Handler")
+		frappe.log_error(title="Xero Webhook Handler", message=f"Error handling webhook event: {str(e)}")
 		frappe.local.response.http_status_code = 500
 		return "Internal Server Error"
 
@@ -98,12 +90,11 @@ def process_webhook_event(event):
 		event_type = event.get("eventType")
 		resource_id = event.get("resourceId")
 
-		# Only handle invoice events
 		if event_category == "INVOICE" and event_type == "UPDATE":
 			update_invoice_from_xero(resource_id)
 
 	except Exception as e:
-		frappe.log_error(f"Error processing webhook event: {str(e)}", "Xero Webhook Event Processing")
+		frappe.log_error(title="Xero Webhook Event Processing", message=f"Error processing webhook event: {str(e)}")
 
 
 def update_invoice_from_xero(invoice_id):
@@ -111,62 +102,53 @@ def update_invoice_from_xero(invoice_id):
 	try:
 		from .base import get_xero_client
 
-		# Get invoice details from Xero
 		client = get_xero_client()
 		response = client.make_request("GET", f"/Invoices/{invoice_id}")
 
 		if not response or "Invoices" not in response:
-			frappe.log_error(f"Invoice {invoice_id} not found in Xero", "Xero Webhook")
+			frappe.log_error(title="Xero Webhook", message=f"Invoice {invoice_id} not found in Xero")
 			return
 
 		xero_invoice = response["Invoices"][0]
 		status = xero_invoice.get("Status")
 		amount_paid = float(xero_invoice.get("AmountPaid", 0))
 
-		# Find corresponding ERPNext Sales Invoice
-		sales_invoice = frappe.get_all(
+		# B3 fix: ignore_permissions — webhook runs in background/guest context
+		sales_invoice_list = frappe.get_all(
 			"Sales Invoice",
 			filters={"custom_xero_invoice_number": invoice_id},
 			fields=["name", "customer", "grand_total", "docstatus"],
 			limit=1,
+			ignore_permissions=True,
 		)
 
-		if not sales_invoice:
-			frappe.log_error(f"No ERPNext invoice found for Xero invoice {invoice_id}", "Xero Webhook")
+		if not sales_invoice_list:
+			frappe.log_error(title="Xero Webhook", message=f"No ERPNext invoice found for Xero invoice {invoice_id}")
 			return
 
-		sales_invoice = sales_invoice[0]
+		sales_invoice = sales_invoice_list[0]
 
-		# Handle PAID status - create payment entry
 		if status == "PAID" and amount_paid > 0:
 			handle_paid_invoice(sales_invoice, xero_invoice, amount_paid)
-
-		# Handle VOIDED status - cancel invoice in ERPNext
 		elif status == "VOIDED":
 			handle_voided_invoice(sales_invoice, invoice_id)
 
-		frappe.log_error(f"Successfully processed {status} invoice {invoice_id}", "Xero Webhook")
+		frappe.logger().info(f"Xero Webhook: processed {status} invoice {invoice_id}")
 
 	except Exception as e:
-		frappe.log_error(f"Error updating invoice {invoice_id} from Xero: {str(e)}", "Xero Webhook")
+		frappe.log_error(title="Xero Webhook", message=f"Error updating invoice {invoice_id} from Xero: {str(e)}")
 
 
 def handle_paid_invoice(sales_invoice, xero_invoice, amount_paid):
 	"""Handle when an invoice is marked as PAID in Xero"""
 	try:
-		# Get the Sales Invoice document
 		sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice["name"])
 
-		# Update custom xero invoice number
 		xero_invoice_id = xero_invoice.get("InvoiceID")
 		if xero_invoice_id:
 			sales_invoice_doc.custom_xero_invoice_number = xero_invoice_id
-			sales_invoice_doc.save()
-
-		# Create payment entry
-		frappe.log_error(
-			f"Starting to create payment entry for invoice: {sales_invoice['name']}", "Xero Webhook"
-		)
+			# B4 fix: ignore_permissions — webhook handler runs without session user
+			sales_invoice_doc.save(ignore_permissions=True)
 
 		try:
 			payment_entry = frappe.new_doc("Payment Entry")
@@ -175,21 +157,16 @@ def handle_paid_invoice(sales_invoice, xero_invoice, amount_paid):
 			payment_entry.party = sales_invoice_doc.customer
 			payment_entry.paid_amount = amount_paid
 			payment_entry.received_amount = amount_paid
-			payment_entry.paid_from = frappe.get_value(
+			# B7 fix: use frappe.db.get_value explicitly instead of frappe.get_value alias
+			payment_entry.paid_from = frappe.db.get_value(
 				"Company", sales_invoice_doc.company, "default_receivable_account"
 			)
-			payment_entry.paid_to = frappe.get_value(
+			payment_entry.paid_to = frappe.db.get_value(
 				"Company", sales_invoice_doc.company, "default_cash_account"
 			)
 			payment_entry.reference_no = f"Xero-{xero_invoice_id}"
 			payment_entry.reference_date = frappe.utils.today()
 
-			frappe.log_error(
-				f"Created payment entry with amount {amount_paid} for customer {sales_invoice_doc.customer}",
-				"Xero Webhook",
-			)
-
-			# Add reference to sales invoice
 			payment_entry.append(
 				"references",
 				{
@@ -199,38 +176,43 @@ def handle_paid_invoice(sales_invoice, xero_invoice, amount_paid):
 				},
 			)
 
-			frappe.log_error("Xero Webhook", f"Added reference to sales invoice {sales_invoice_doc.name}")
-
-			payment_entry.insert()
-			frappe.log_error("Xero Webhook", f"Inserted payment entry {payment_entry.name}")
-
+			# B4 fix: ignore_permissions
+			payment_entry.insert(ignore_permissions=True)
 			payment_entry.submit()
-			frappe.log_error("Xero Webhook", f"Submitted payment entry {payment_entry.name}")
 
-			frappe.log_error(
-				"Xero Webhook Success",
-				f"Successfully created payment entry {payment_entry.name} for invoice {sales_invoice['name']}",
+			frappe.logger().info(
+				f"Xero Webhook: created payment entry {payment_entry.name} for invoice {sales_invoice['name']}"
 			)
 
 		except Exception as payment_error:
+			# C2 fix: removed 8+ frappe.log_error() debug/trace calls — use single error log on failure
 			frappe.log_error(
-				"Xero Webhook Payment Error",
-				f"Failed to create payment entry for invoice {sales_invoice['name']}: {str(payment_error)}",
+				title="Xero Webhook Payment Error",
+				message=f"Failed to create payment entry for invoice {sales_invoice['name']}: {str(payment_error)}",
 			)
 
 	except Exception as e:
 		frappe.log_error(
-			"Xero Webhook Error", f"Error handling paid invoice {sales_invoice['name']}: {str(e)}"
+			title="Xero Webhook Error",
+			message=f"Error handling paid invoice {sales_invoice['name']}: {str(e)}",
 		)
 
 
 def handle_voided_invoice(sales_invoice, xero_invoice_id):
 	"""Handle when an invoice is VOIDED in Xero"""
 	try:
-		from ..schedulers.voided_invoice_sync import sync_voided_invoices
+		# C2 fix: was calling sync_voided_invoices() — the full batch job that fetches ALL voided
+		# invoices from Xero for today. For a single webhook event, cancel only this one invoice.
+		from ..schedulers.voided_invoice_sync import cancel_invoice_in_erpnext
 
-		# Sync voided invoices from Xero
-		sync_voided_invoices()
+		cancel_invoice_in_erpnext(
+			{"name": sales_invoice["name"]},
+			xero_invoice_id,
+			None,
+		)
 
 	except Exception as e:
-		frappe.log_error(f"Error handling voided invoice {sales_invoice['name']}: {str(e)}", "Xero Webhook")
+		frappe.log_error(
+			title="Xero Webhook",
+			message=f"Error handling voided invoice {sales_invoice['name']}: {str(e)}",
+		)

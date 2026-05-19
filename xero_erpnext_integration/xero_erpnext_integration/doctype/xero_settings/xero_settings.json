@@ -61,7 +61,7 @@
   },
   {
    "fieldname": "webhook_secret",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "label": "Webhook Secret"
   },
   {

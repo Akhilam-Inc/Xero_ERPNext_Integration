@@ -18,19 +18,10 @@ def get_xero_contacts():
 		return {"status": "error", "message": str(e)}
 
 
-def get_contact(self, contact_name=None):
-	"""Get contacts from Xero"""
-	try:
-		params = {}
-		if contact_name:
-			params["where"] = f'Name=="{contact_name}"'
-
-		response = self.make_request("GET", "Contacts", params=params)
-		return response.get("Contacts", []) if response else []
-
-	except Exception as e:
-		frappe.log_error(title="Xero Get Contacts", message=f"Failed to get contacts: {str(e)}")
-		return []
+# A4 fix: removed dead module-level `get_contact(self, ...)` function.
+# It had a `self` parameter (not a class method), called self.make_request()
+# which would crash if called as a plain function, and was never invoked anywhere.
+# The equivalent functionality is available via XeroAPIClient.get_payments() in base.py.
 
 
 @frappe.whitelist()
@@ -40,11 +31,11 @@ def create_contact(doc, method=None):
 		client = get_xero_client()
 		contact = frappe.get_doc("Contact", doc)
 
-		# Check customer and supplier links
 		is_customer = False
 		is_supplier = False
 
-		if hasattr(contact, "links") and contact.links:
+		# B6 fix: use doc.get() instead of hasattr() — hasattr always returns True on Frappe docs
+		if contact.get("links"):
 			for link in contact.links:
 				if link.link_doctype == "Customer":
 					is_customer = True

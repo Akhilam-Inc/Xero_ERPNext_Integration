@@ -41,7 +41,7 @@ def authorize():
 
 	except Exception as e:
 		error_msg = str(e)
-		frappe.log_error(f"Xero Authorization Error: {error_msg}", "Xero Authorization")
+		frappe.log_error(title="Xero Authorization", message=f"Xero Authorization Error: {error_msg}")
 
 		# Provide specific error messages for common issues
 		if "invalid_grant" in error_msg.lower():
