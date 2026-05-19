@@ -1,0 +1,119 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Workflow",
+  "document_type": "Sales Invoice",
+  "is_active": 1,
+  "modified": "2025-08-15 02:10:52.985393",
+  "name": "Sales Invoice Sync to Xero",
+  "override_status": 1,
+  "send_email_alert": 0,
+  "states": [
+   {
+    "allow_edit": "All",
+    "avoid_status_override": 0,
+    "doc_status": "0",
+    "is_optional_state": 0,
+    "message": null,
+    "next_action_email_template": null,
+    "parent": "Sales Invoice Sync to Xero",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "send_email": 1,
+    "state": "Draft",
+    "update_field": null,
+    "update_value": null,
+    "workflow_builder_id": null
+   },
+   {
+    "allow_edit": "All",
+    "avoid_status_override": 0,
+    "doc_status": "0",
+    "is_optional_state": 0,
+    "message": null,
+    "next_action_email_template": null,
+    "parent": "Sales Invoice Sync to Xero",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "send_email": 1,
+    "state": "Synced to Xero",
+    "update_field": null,
+    "update_value": null,
+    "workflow_builder_id": null
+   },
+   {
+    "allow_edit": "All",
+    "avoid_status_override": 0,
+    "doc_status": "1",
+    "is_optional_state": 0,
+    "message": null,
+    "next_action_email_template": null,
+    "parent": "Sales Invoice Sync to Xero",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "send_email": 1,
+    "state": "Submitted",
+    "update_field": null,
+    "update_value": null,
+    "workflow_builder_id": null
+   }
+  ],
+  "transitions": [
+   {
+    "action": "Sync to Xero",
+    "allow_self_approval": 1,
+    "allowed": "All",
+    "condition": "doc.custom_contact_id and not doc.custom_do_not_sync_to_xero",
+    "next_state": "Synced to Xero",
+    "parent": "Sales Invoice Sync to Xero",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "send_email_to_creator": 0,
+    "state": "Draft",
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Submit",
+    "allow_self_approval": 1,
+    "allowed": "All",
+    "condition": "",
+    "next_state": "Submitted",
+    "parent": "Sales Invoice Sync to Xero",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "send_email_to_creator": 0,
+    "state": "Synced to Xero",
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Submit",
+    "allow_self_approval": 1,
+    "allowed": "All",
+    "condition": "doc.custom_do_not_sync_to_xero",
+    "next_state": "Submitted",
+    "parent": "Sales Invoice Sync to Xero",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "send_email_to_creator": 0,
+    "state": "Draft",
+    "workflow_builder_id": null
+   },
+   {
+    "action": "Sync to Xero",
+    "allow_self_approval": 1,
+    "allowed": "All",
+    "condition": "not doc.custom_contact_id and not doc.custom_do_not_sync_to_xero\n",
+    "next_state": "Draft",
+    "parent": "Sales Invoice Sync to Xero",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "send_email_to_creator": 0,
+    "state": "Draft",
+    "workflow_builder_id": null
+   }
+  ],
+  "workflow_data": null,
+  "workflow_name": "Sales Invoice Sync to Xero",
+  "workflow_state_field": "workflow_state"
+ }
+]

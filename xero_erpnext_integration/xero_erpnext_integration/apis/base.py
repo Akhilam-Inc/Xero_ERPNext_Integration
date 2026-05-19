@@ -358,7 +358,7 @@ class XeroAPIClient:
 			if response.status_code in [200, 201]:
 				try:
 					return response.json()
-				except:
+				except ValueError:
 					return {"message": "Success", "data": response.text}
 			elif response.status_code == 401:
 				# Try to refresh token and retry once
@@ -378,7 +378,7 @@ class XeroAPIClient:
 					if response.status_code in [200, 201]:
 						try:
 							return response.json()
-						except:
+						except ValueError:
 							return {"message": "Success", "data": response.text}
 
 				frappe.throw(_("Authentication failed. Please re-authorize the application."))
@@ -531,7 +531,7 @@ class XeroAPIClient:
 
 				try:
 					log_doc.response_data = json.dumps(response.json(), indent=2)
-				except:
+				except ValueError:
 					log_doc.response_data = response.text
 
 				log_doc.save(ignore_permissions=True)

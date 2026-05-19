@@ -1,6 +1,7 @@
 import json
 
 import frappe
+from frappe import _
 
 from .base import get_xero_client
 
@@ -19,7 +20,7 @@ def create_payment(doc, method=None):
 
 		# Validate payment type - should be Receive for customer payments
 		if payment.payment_type != "Receive":
-			frappe.throw("Only 'Receive' payment entries can be synced to Xero")
+			frappe.throw(_("Only 'Receive' payment entries can be synced to Xero"))
 
 		# Get the related invoice's Xero ID
 		invoice_xero_id = None
@@ -32,12 +33,12 @@ def create_payment(doc, method=None):
 					break
 
 		if not invoice_xero_id:
-			frappe.throw("No Xero Invoice ID found in the referenced Sales Invoice")
+			frappe.throw(_("No Xero Invoice ID found in the referenced Sales Invoice"))
 
 		# Get account code from the payment account
 		account_code = get_account_code(payment.paid_to)
 		if not account_code:
-			frappe.throw(f"No account code found for account: {payment.paid_to}")
+			frappe.throw(_("No account code found for account: {0}").format(payment.paid_to))
 
 		# Prepare payment data
 		payment_data = {
@@ -66,8 +67,8 @@ def create_payment(doc, method=None):
 		return {"status": "error", "message": "Failed to create payment in Xero"}
 
 	except Exception as e:
-		frappe.log_error("Xero Create Payment", f"Failed to create payment in Xero: {str(e)}")
-		frappe.throw(f"Failed to create payment in Xero: {str(e)}")
+		frappe.log_error(title="Xero Create Payment", message=f"Failed to create payment in Xero: {str(e)}")
+		frappe.throw(_("Failed to create payment in Xero: {0}").format(str(e)))
 		return False
 
 
@@ -76,15 +77,10 @@ def get_account_code(account_name):
 	"""Get account code for the given account"""
 	try:
 		account = frappe.get_doc("Account", account_name)
-
-		# if account.get("account_number"):
-		#     return account.account_number
-
-		# Default fallback
 		return "880"  # Default bank account code
 
 	except Exception as e:
-		frappe.log_error("Get Account Code", f"Error getting account code for {account_name}: {str(e)}")
+		frappe.log_error(title="Get Account Code", message=f"Error getting account code for {account_name}: {str(e)}")
 		return None
 
 
@@ -107,7 +103,8 @@ def get_customer_contact_id(customer):
 		return None
 	except Exception as e:
 		frappe.log_error(
-			"Get Customer Contact ID", f"Error getting contact id for customer {customer}: {str(e)}"
+			title="Get Customer Contact ID",
+			message=f"Error getting contact id for customer {customer}: {str(e)}"
 		)
 		return None
 
@@ -120,4 +117,4 @@ def sync_payment_to_xero(payment_entry_name):
 		result = create_payment(payment_entry)
 		return result
 	except Exception as e:
-		frappe.throw(f"Failed to sync payment to Xero: {str(e)}")
+		frappe.throw(_("Failed to sync payment to Xero: {0}").format(str(e)))
