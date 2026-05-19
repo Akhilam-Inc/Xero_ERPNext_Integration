@@ -14,7 +14,7 @@ def authorize():
 		if not settings.code:
 			return {"status": "error", "message": "Authorization code is missing. Please authorize again."}
 
-		if not settings.client_id or not settings.get_password("client_secret"):
+		if not settings.client_id or not settings.get_password("client_secret", raise_exception=False):
 			return {"status": "error", "message": "Client ID or Client Secret is missing in Xero Settings."}
 
 		# Initialize client and exchange code for token

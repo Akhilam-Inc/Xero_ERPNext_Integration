@@ -50,10 +50,7 @@ class XeroAPIClient:
 
 	def _safe_get_password(self, field):
 		"""Return the decrypted password field value, or None if not yet set."""
-		try:
-			return self.settings.get_password(field) or None
-		except Exception:
-			return None
+		return self.settings.get_password(field, raise_exception=False) or None
 
 	def get_authorization_url(self, state=None):
 		"""Generate OAuth 2.0 authorization URL"""
