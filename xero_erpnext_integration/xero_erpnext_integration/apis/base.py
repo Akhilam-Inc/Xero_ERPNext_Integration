@@ -33,7 +33,7 @@ class XeroAPIClient:
 		self.client_id = self.settings.client_id
 		self.client_secret = self._safe_get_password("client_secret")
 		# Use stored redirect_uri if set; otherwise derive from site URL (tunnel or host_name in site config)
-		self.redirect_uri = self.settings.redirect_uri or frappe.utils.get_url("/app/xero-settings")
+		self.redirect_uri = self.settings.redirect_uri or frappe.utils.get_url("/desk/xero-settings")
 		self.scope = "accounting.transactions accounting.contacts accounting.settings offline_access"
 
 		self.access_token = self._safe_get_password("access_token")
