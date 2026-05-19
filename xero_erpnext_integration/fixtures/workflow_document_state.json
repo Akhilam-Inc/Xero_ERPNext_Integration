@@ -2,7 +2,7 @@
  {
   "allow_edit": "All",
   "avoid_status_override": 0,
-  "doc_status": "0",
+  "doc_status": 0,
   "docstatus": 0,
   "doctype": "Workflow Document State",
   "is_optional_state": 0,
@@ -22,7 +22,7 @@
  {
   "allow_edit": "All",
   "avoid_status_override": 0,
-  "doc_status": "0",
+  "doc_status": 0,
   "docstatus": 0,
   "doctype": "Workflow Document State",
   "is_optional_state": 0,
@@ -42,7 +42,7 @@
  {
   "allow_edit": "All",
   "avoid_status_override": 0,
-  "doc_status": "1",
+  "doc_status": 1,
   "docstatus": 0,
   "doctype": "Workflow Document State",
   "is_optional_state": 0,

@@ -289,8 +289,9 @@ class XeroAPIClient:
 				expires_at = datetime.now() + timedelta(seconds=expires_in)
 				self.settings.token_expires_at = expires_at
 
-				# Save settings
+				# Save settings and invalidate cache so next XeroAPIClient() gets fresh tokens
 				self.settings.save()
+				frappe.clear_document_cache("Xero Settings", "Xero Settings")
 
 				# Update headers
 				self.access_token = self.settings.access_token
