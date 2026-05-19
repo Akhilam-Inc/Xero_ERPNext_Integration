@@ -2,8 +2,9 @@ import re
 
 import frappe
 from frappe import _
+from frappe.query_builder import DocType
+from frappe.query_builder.functions import Sum
 from frappe.utils import flt
-import time
 
 from .base import get_xero_client
 
@@ -12,15 +13,23 @@ from .base import get_xero_client
 def sync_invoice_payments():
 	"""Sync payment status from Xero and create payment entries for paid invoices"""
 	try:
-		# B3 fix: ignore_permissions — runs in scheduler context
-		unpaid_invoices = frappe.get_all("Sales Invoice",
-			filters={
-				"custom_xero_invoice_number": ["is", "set"],
-				"status": ["in", ["Draft", "Unpaid", "Overdue", "Partly Paid"]],
-				"workflow_state": ["in", ["Synced to Xero", "Submitted"]]
-			},
-			fields=["name", "customer", "grand_total", "outstanding_amount", "custom_xero_invoice_number", "company"],
-			ignore_permissions=True,
+		# frappe.qb migration: ["is", "set"] → .isnotnull(), ["in", [...]] → .isin([...])
+		# frappe.qb bypasses ORM permission layer — appropriate for scheduler context (B3)
+		SalesInvoice = DocType("Sales Invoice")
+		unpaid_invoices = (
+			frappe.qb.from_(SalesInvoice)
+			.select(
+				SalesInvoice.name,
+				SalesInvoice.customer,
+				SalesInvoice.grand_total,
+				SalesInvoice.outstanding_amount,
+				SalesInvoice.custom_xero_invoice_number,
+				SalesInvoice.company,
+			)
+			.where(SalesInvoice.custom_xero_invoice_number.isnotnull())
+			.where(SalesInvoice.status.isin(["Draft", "Unpaid", "Overdue", "Partly Paid"]))
+			.where(SalesInvoice.workflow_state.isin(["Synced to Xero", "Submitted"]))
+			.run(as_dict=True)
 		)
 
 		if not unpaid_invoices:
@@ -106,29 +115,21 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 				message=f"Error changing workflow state for {sales_invoice.name}: {str(workflow_error)}"
 			)
 
-		# C4 fix: Payment Entry references live in child table (Payment Entry Reference),
-		# not as direct fields — query via the child table to find existing payments.
-		existing_payment_refs = frappe.get_all(
-			"Payment Entry Reference",
-			filters={
-				"reference_doctype": "Sales Invoice",
-				"reference_name": sales_invoice.name,
-				"parenttype": "Payment Entry",
-			},
-			fields=["parent", "allocated_amount"],
-			ignore_permissions=True,
+		# C4 fix + frappe.qb migration: single JOIN query replaces two sequential get_all() calls.
+		# Uses Sum() aggregate (guide Rule 1 pattern) on the child table directly.
+		# frappe.qb bypasses ORM permissions — appropriate for scheduler context (B3/B4).
+		PaymentEntry = DocType("Payment Entry")
+		PaymentEntryRef = DocType("Payment Entry Reference")
+		result = (
+			frappe.qb.from_(PaymentEntry)
+			.join(PaymentEntryRef).on(PaymentEntryRef.parent == PaymentEntry.name)
+			.select(Sum(PaymentEntryRef.allocated_amount).as_("total_paid"))
+			.where(PaymentEntryRef.reference_doctype == "Sales Invoice")
+			.where(PaymentEntryRef.reference_name == sales_invoice.name)
+			.where(PaymentEntry.docstatus == 1)
+			.run()
 		)
-
-		existing_payment_names = [ref.parent for ref in existing_payment_refs]
-		total_existing_payments = flt(0)
-		if existing_payment_names:
-			submitted = frappe.get_all(
-				"Payment Entry",
-				filters={"name": ["in", existing_payment_names], "docstatus": 1},
-				fields=["name", "paid_amount"],
-				ignore_permissions=True,
-			)
-			total_existing_payments = sum(flt(pe.paid_amount) for pe in submitted)
+		total_existing_payments = flt(result[0][0]) if result and result[0][0] is not None else flt(0)
 
 		remaining_amount = flt(amount_paid) - total_existing_payments
 
