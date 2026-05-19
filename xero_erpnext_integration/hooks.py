@@ -11,15 +11,14 @@ app_license = "mit"
 required_apps = ["erpnext"]
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "xero_erpnext_integration",
-# 		"logo": "/assets/xero_erpnext_integration/logo.png",
-# 		"title": "Xero Erpnext Integration",
-# 		"route": "/xero_erpnext_integration",
-# 		"has_permission": "xero_erpnext_integration.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "xero_erpnext_integration",
+		"logo": "/assets/xero_erpnext_integration/logo.png",
+		"title": "Xero Erpnext Integration",
+		"route": "/xero_erpnext_integration",
+	}
+]
 
 # Includes in <head>
 # ------------------

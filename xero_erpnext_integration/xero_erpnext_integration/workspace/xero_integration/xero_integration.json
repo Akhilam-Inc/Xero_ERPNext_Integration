@@ -60,7 +60,7 @@
    "doc_view": "List",
    "label": "Payment Entry",
    "link_to": "Payment Entry",
-   "stats_filter": "[[\"Payment Entry\",\"name\",\"is\",\"set\",false]]",
+   "stats_filter": "[[\"Payment Entry\",\"name\",\"is\",\"set\"]]",
    "type": "DocType"
   },
   {
@@ -75,7 +75,7 @@
    "doc_view": "List",
    "label": "Sales Invoice",
    "link_to": "Sales Invoice",
-   "stats_filter": "[[\"Sales Invoice\",\"name\",\"is\",\"set\",false]]",
+   "stats_filter": "[[\"Sales Invoice\",\"name\",\"is\",\"set\"]]",
    "type": "DocType"
   },
   {
