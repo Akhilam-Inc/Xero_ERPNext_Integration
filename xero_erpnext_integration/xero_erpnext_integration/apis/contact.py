@@ -29,7 +29,7 @@ def get_contact(self, contact_name=None):
 		return response.get("Contacts", []) if response else []
 
 	except Exception as e:
-		frappe.log_error(f"Failed to get contacts: {str(e)}", "Xero Get Contacts")
+		frappe.log_error(title="Xero Get Contacts", message=f"Failed to get contacts: {str(e)}")
 		return []
 
 
@@ -75,5 +75,5 @@ def create_contact(doc, method=None):
 		return None
 
 	except Exception as e:
-		frappe.log_error(f"Failed to create contact: {str(e)}", "Xero Create Contact")
+		frappe.log_error(title="Xero Create Contact", message=f"Failed to create contact: {str(e)}")
 		return None

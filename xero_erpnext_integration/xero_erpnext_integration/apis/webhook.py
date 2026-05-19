@@ -74,7 +74,7 @@ def handle_webhook_event():
 		try:
 			# Try calling json() method first
 			req_data = request.json() if callable(request.json) else request.json
-		except:
+		except (ValueError, AttributeError):
 			# Fallback to getting json data from request
 			req_data = frappe.local.form_dict
 

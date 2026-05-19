@@ -8,7 +8,7 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -72,6 +72,11 @@ doc_events = {
 fixtures = [
 	{"doctype": "Custom Field", "filters": [["module", "=", "Xero Erpnext Integration"]]},
 	{"doctype": "Property Setter", "filters": [["module", "=", "Xero Erpnext Integration"]]},
+	{"dt": "Workflow", "filters": [["document_type", "=", "Sales Invoice"]]},
+	{"dt": "Workflow State"},
+	{"dt": "Workflow Transition", "filters": [["parent", "=", "Sales Invoice Sync to Xero"]]},
+	{"dt": "Workflow Document State", "filters": [["parent", "=", "Sales Invoice Sync to Xero"]]},
+	{"dt": "Workflow Action Master"},
 ]
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}

@@ -66,12 +66,12 @@
   },
   {
    "fieldname": "access_token",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "label": "Access Token"
   },
   {
    "fieldname": "refresh_token",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "label": "Refresh Token"
   },
   {

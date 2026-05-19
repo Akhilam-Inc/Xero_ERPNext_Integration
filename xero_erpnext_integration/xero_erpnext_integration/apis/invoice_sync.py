@@ -1,7 +1,5 @@
 import frappe
 
-from .sales_invoice import get_specific_invoices
-
 
 @frappe.whitelist()
 def create_payment_from_xero(xero_invoice_id, payment_amount):
