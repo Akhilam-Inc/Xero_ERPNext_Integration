@@ -11,7 +11,7 @@ frappe.ui.form.on("Contact", {
 				 * If the account number is not provided or no customer links are present,
 				 * it will show an alert message.
 				 */
-				frm.add_custom_button("Send to Xero", function () {
+				frm.add_custom_button(__("Send to Xero"), function () { // R37
 					if (!frm.doc.links.map((item) => item.link_doctype === "Customer").length) {
 						frappe.show_alert({
 							title: "Warning",

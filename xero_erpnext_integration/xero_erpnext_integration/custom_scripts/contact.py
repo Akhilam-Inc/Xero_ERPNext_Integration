@@ -3,7 +3,7 @@ from frappe import _
 
 
 @frappe.whitelist()
-def send_contact_to_xero(doc_name):
+def send_contact_to_xero(doc_name: str) -> bool | None:
 	"""
 	Trigger Xero contact creation when button is clicked
 	and the contact wasn't previously sent to Xero

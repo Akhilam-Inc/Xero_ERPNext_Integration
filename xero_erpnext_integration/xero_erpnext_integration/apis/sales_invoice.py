@@ -245,7 +245,7 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 
 
 @frappe.whitelist()
-def create_invoice(doc, method=None, update_invoice=False):
+def create_invoice(doc: str, method: str | None = None, update_invoice: bool = False) -> dict:
 	"""Create invoice in Xero"""
 	try:
 		client = get_xero_client()
@@ -361,7 +361,7 @@ def create_invoice(doc, method=None, update_invoice=False):
 
 
 @frappe.whitelist()
-def fetch_xero_contacts(contact_person):
+def fetch_xero_contacts(contact_person: str) -> list:
 	"""Fetch contacts from Xero and filter by similar names to contact person"""
 	try:
 		client = get_xero_client()
@@ -391,7 +391,7 @@ def fetch_xero_contacts(contact_person):
 
 
 @frappe.whitelist()
-def create_contact_and_map(contact_person, sales_invoice):
+def create_contact_and_map(contact_person: str, sales_invoice: str) -> dict:
 	"""Create contact in Xero using ERPNext contact details and map it"""
 	try:
 		contact_doc = frappe.get_doc("Contact", contact_person)
@@ -441,7 +441,7 @@ def create_contact_and_map(contact_person, sales_invoice):
 
 
 @frappe.whitelist()
-def map_contact_to_xero(contact_id, contact_person, sales_invoice):
+def map_contact_to_xero(contact_id: str, contact_person: str, sales_invoice: str) -> bool:
 	"""Map contact to Xero by setting contact_id in Contact and Sales Invoice"""
 	try:
 		contact_doc = frappe.get_doc("Contact", contact_person)
@@ -461,7 +461,7 @@ def map_contact_to_xero(contact_id, contact_person, sales_invoice):
 
 
 @frappe.whitelist()
-def cancel_invoice_in_xero(xero_invoice_id):
+def cancel_invoice_in_xero(xero_invoice_id: str) -> dict:
 	"""Cancel/void an invoice in Xero"""
 	try:
 		client = get_xero_client()
@@ -501,7 +501,7 @@ def cancel_invoice_in_xero(xero_invoice_id):
 
 
 @frappe.whitelist()
-def get_customer_contact_id(customer):
+def get_customer_contact_id(customer: str) -> str | None:
 	"""Get customer contact ID from Xero"""
 	try:
 		customer_doc = frappe.get_doc("Customer", customer)

@@ -6,7 +6,7 @@ from .base import get_xero_client
 
 
 @frappe.whitelist()
-def get_xero_contacts():
+def get_xero_contacts() -> dict:
 	"""Get all Xero contacts"""
 	try:
 		client = get_xero_client()
@@ -25,7 +25,7 @@ def get_xero_contacts():
 
 
 @frappe.whitelist()
-def create_contact(doc, method=None):
+def create_contact(doc: str, method: str | None = None) -> dict | None:
 	"""Create contact in Xero"""
 	try:
 		client = get_xero_client()

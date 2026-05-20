@@ -2,7 +2,7 @@ import frappe
 
 
 @frappe.whitelist()
-def create_payment_from_xero(xero_invoice_id, payment_amount):
+def create_payment_from_xero(xero_invoice_id: str, payment_amount: float) -> dict:
 	"""Create payment entry when payment is received in Xero"""
 	try:
 		# A1 fix: correct filter field — was "xero_invoice_id" (non-existent)

@@ -7,7 +7,7 @@ from .base import get_xero_client
 
 
 @frappe.whitelist()
-def create_payment(doc, method=None):
+def create_payment(doc: str, method: str | None = None):
 	"""Create payment in Xero"""
 	try:
 		client = get_xero_client()
@@ -23,13 +23,14 @@ def create_payment(doc, method=None):
 			frappe.throw(_("Only 'Receive' payment entries can be synced to Xero"))
 
 		# Get the related invoice's Xero ID
+		# S3 fix: use db.get_value instead of get_doc inside loop — only one field needed
 		invoice_xero_id = None
 		if payment.references:
 			for ref in payment.references:
 				if ref.reference_doctype == "Sales Invoice":
-					# Get Xero Invoice ID from the Sales Invoice
-					sales_invoice = frappe.get_doc("Sales Invoice", ref.reference_name)
-					invoice_xero_id = sales_invoice.get("custom_xero_invoice_number")
+					invoice_xero_id = frappe.db.get_value(
+						"Sales Invoice", ref.reference_name, "custom_xero_invoice_number"
+					)
 					break
 
 		if not invoice_xero_id:
@@ -73,19 +74,26 @@ def create_payment(doc, method=None):
 
 
 @frappe.whitelist()
-def get_account_code(account_name):
-	"""Get account code for the given account"""
-	try:
-		account = frappe.get_doc("Account", account_name)
-		return "880"  # Default bank account code
+def get_account_code(account_name: str) -> str | None:
+	"""Return the Xero account code for the given ERPNext bank/cash account.
 
+	Resolution order:
+	  1. custom_xero_account_code field on the Account (if set)
+	  2. default_account_code from Xero Settings
+	  3. None — caller will throw a user-facing error
+	"""
+	try:
+		custom_code = frappe.db.get_value("Account", account_name, "custom_xero_account_code")
+		if custom_code:
+			return custom_code
+		return frappe.db.get_single_value("Xero Settings", "default_account_code") or None
 	except Exception as e:
 		frappe.log_error(title="Get Account Code", message=f"Error getting account code for {account_name}: {str(e)}")
 		return None
 
 
 @frappe.whitelist()
-def get_customer_contact_id(customer):
+def get_customer_contact_id(customer: str) -> str | None:
 	"""Get Xero contact ID for customer"""
 	try:
 		dynamic_links = frappe.get_all(
@@ -110,7 +118,7 @@ def get_customer_contact_id(customer):
 
 
 @frappe.whitelist()
-def sync_payment_to_xero(payment_entry_name):
+def sync_payment_to_xero(payment_entry_name: str):
 	"""Manual sync function to create payment in Xero"""
 	try:
 		payment_entry = frappe.get_doc("Payment Entry", payment_entry_name)

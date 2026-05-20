@@ -1,6 +1,5 @@
 frappe.ui.form.on("Payment Entry", {
 	refresh(frm) {
-		console.log("I am here");
 	},
 	before_submit: function (frm) {
 		// send_payment_to_xero(frm)
@@ -27,12 +26,12 @@ function send_payment_to_xero(frm) {
 					frm.set_df_property("custom_xero_payment_id", "read_only", 1);
 					// frm.save()
 				} else {
-					frappe.throw("Error creating payment in Xero");
+					frappe.throw(__("Error creating payment in Xero")); // R36
 				}
 			}
 		},
 		error: function (e) {
-			frappe.throw("Error creating payment in Xero");
+			frappe.throw(__("Error creating payment in Xero")); // R36
 		},
 	});
 }
