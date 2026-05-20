@@ -26,7 +26,11 @@
   "tenant_id_url",
   "refresh_token",
   "tenant_id",
-  "tenant_name"
+  "tenant_name",
+  "section_break_invoice_defaults",
+  "default_account_code",
+  "column_break_invoice_defaults",
+  "default_tax_type"
  ],
  "fields": [
   {
@@ -138,6 +142,28 @@
   {
    "fieldname": "column_break_eoet",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_invoice_defaults",
+   "fieldtype": "Section Break",
+   "label": "Invoice Defaults"
+  },
+  {
+   "fieldname": "default_account_code",
+   "fieldtype": "Data",
+   "label": "Default Account Code",
+   "description": "Xero account code used for line items when not set on the ERPNext Item (e.g. 200 for Sales). Find valid codes in Xero Chart of Accounts."
+  },
+  {
+   "fieldname": "column_break_invoice_defaults",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_tax_type",
+   "fieldtype": "Data",
+   "label": "Default Tax Type",
+   "default": "NONE",
+   "description": "Xero TaxType for line items with no ERPNext tax (e.g. NONE, OUTPUT, EXEMPTOUTPUT). NONE = zero/no tax."
   }
  ],
  "grid_page_length": 50,

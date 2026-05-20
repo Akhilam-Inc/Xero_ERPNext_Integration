@@ -258,15 +258,47 @@ def create_invoice(doc, method=None, update_invoice=False):
 
 		contact_id = get_customer_contact_id(invoice.customer)
 		if not contact_id:
-			frappe.throw(_("No Xero contact ID found for customer: {0}").format(invoice.customer))
+			frappe.throw(_("No Xero Contact ID found for customer: {0}").format(invoice.customer))
+
+		settings = frappe.get_single("Xero Settings")
+		default_account_code = settings.default_account_code or ""
+		default_tax_type = settings.default_tax_type or "NONE"
+
+		# Build a tax-rate lookup keyed by item_code for per-item tax rates
+		# Falls back to the invoice-level effective tax rate if no per-item breakdown
+		invoice_tax_rate = flt(0)
+		if invoice.taxes:
+			for tax in invoice.taxes:
+				if tax.charge_type == "On Net Total":
+					invoice_tax_rate += flt(tax.rate)
 
 		line_items = []
 		for item in invoice.items:
+			# AccountCode: item-level custom field → Xero Settings default → error if neither set
+			account_code = item.get("custom_account_code") or default_account_code
+			if not account_code:
+				frappe.throw(
+					_(
+						"No Xero Account Code set for item '{0}'.<br>"
+						"Either set a Default Account Code in Xero Settings, "
+						"or set custom_account_code on the Item."
+					).format(item.item_name or item.item_code)
+				)
+
+			# TaxType: derive from item's effective tax rate; fall back to invoice-level rate
+			item_tax_rate = flt(item.get("item_tax_rate") or invoice_tax_rate)
+			if item_tax_rate > 0:
+				# Non-zero tax — use the configured Xero tax type for taxable lines
+				tax_type = default_tax_type if default_tax_type != "NONE" else "OUTPUT"
+			else:
+				tax_type = "NONE"
+
 			line_item = {
 				"Description": item.description or item.item_name,
 				"Quantity": str(item.qty),
 				"UnitAmount": str(item.rate),
-				"AccountCode": item.get("custom_account_code") or "200",
+				"AccountCode": account_code,
+				"TaxType": tax_type,
 			}
 
 			if item.get("discount_percentage"):
