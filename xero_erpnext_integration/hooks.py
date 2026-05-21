@@ -1,7 +1,7 @@
 app_name = "xero_erpnext_integration"
-app_title = "Xero Erpnext Integration"
+app_title = "Xero Integration"
 app_publisher = "nasirucode"
-app_description = "Xero Erpnext Integration"
+app_description = "Xero Integration for ERPNext"
 app_email = "akingbolahan12@gmail.com"
 app_license = "mit"
 
@@ -14,9 +14,9 @@ required_apps = ["erpnext"]
 add_to_apps_screen = [
 	{
 		"name": "xero_erpnext_integration",
-		"logo": "/assets/xero_erpnext_integration/logo.png",
-		"title": "Xero Erpnext Integration",
-		"route": "/xero_erpnext_integration",
+		"logo": "/assets/xero_erpnext_integration/images/akhilam-logo.svg",
+		"title": "Xero Integration",
+		"route": "Xero Integration",
 	}
 ]
 
