@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"I0AceHYFOQ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Xero Integration</span>\",\"col\":12}},{\"id\":\"RRvMkc2ap6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"BvRCG4Fm6i\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment Entry\",\"col\":3}},{\"id\":\"zGm-icD1ov\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contact\",\"col\":3}},{\"id\":\"TBRgdTITCq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Xero Help\",\"col\":3}},{\"id\":\"jZ4FG7H1Ce\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"e8ZyCC3Fm5\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}}]",
+ "content": "[{\"id\":\"I0AceHYFOQ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Xero Integration</span>\",\"col\":12}},{\"id\":\"RRvMkc2ap6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"BvRCG4Fm6i\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment Entry\",\"col\":3}},{\"id\":\"zGm-icD1ov\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Contact\",\"col\":3}},{\"id\":\"TBRgdTITCq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Xero Help\",\"col\":3}},{\"id\":\"5ucx6OqE9w\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Account\",\"col\":3}},{\"id\":\"jZ4FG7H1Ce\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"e8ZyCC3Fm5\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}}]",
  "creation": "2025-06-25 01:26:47.103646",
  "custom_blocks": [],
  "docstatus": 0,
@@ -43,7 +43,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-07-23 09:25:49.187331",
+ "modified": "2026-05-26 12:33:28.204217",
  "modified_by": "Administrator",
  "module": "Xero Erpnext Integration",
  "name": "Xero Integration",
@@ -61,6 +61,14 @@
    "label": "Payment Entry",
    "link_to": "Payment Entry",
    "stats_filter": "[[\"Payment Entry\",\"name\",\"is\",\"set\"]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Account",
+   "link_to": "Account",
+   "stats_filter": "[]",
    "type": "DocType"
   },
   {

@@ -26,12 +26,26 @@ def authorize():
 		# test_result = test_connection_with_token(token_data["access_token"], token_data["tenant_id"])
 
 		if token_data.get("status") == "success":
+			# Persist on the server immediately so refresh_token is never lost if the
+			# browser save fails or the user closes the tab.
+			settings.reload()
+			settings.access_token = token_data.get("access_token")
+			settings.refresh_token = token_data.get("refresh_token")
+			settings.scope = token_data.get("scope")
+			settings.tenant_id = token_data.get("tenant_id")
+			settings.tenant_name = token_data.get("tenant_name")
+			settings.token_expires_at = token_data.get("expires_at")
+			settings.enable = 1
+			settings.flags.ignore_permissions = True
+			settings.save()
+			frappe.db.commit()
+
 			return {
 				"status": "success",
 				"message": "Authorization successful! Connection established with Xero.",
 				"token_data": token_data,
 				"organization": token_data.get("data", {}),
-				"save_required": True,  # Signal frontend to save
+				"save_required": True,
 			}
 		else:
 			return {
@@ -64,6 +78,13 @@ def authorize():
 				"status": "error",
 				"message": f"Authorization error: {error_msg}. Please try authorizing again.",
 			}
+
+
+@frappe.whitelist()
+def test_connection():
+	"""Test Xero API access (organisation + tax rates)."""
+	client = get_xero_client()
+	return client.test_connection()
 
 
 def test_connection_simple():

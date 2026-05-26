@@ -21,13 +21,39 @@ frappe.ui.form.on("Xero Settings", {
 			authorize(frm);
 		});
 
+		frm.add_custom_button(__("Test Connection"), function () {
+			frappe.call({
+				method: "xero_erpnext_integration.xero_erpnext_integration.apis.connection.test_connection",
+				freeze: true,
+				freeze_message: __("Testing Xero connection..."),
+				callback: function (r) {
+					const res = r.message || {};
+					if (res.status === "success") {
+						frappe.msgprint({
+							title: __("Connection OK"),
+							message: res.message,
+							indicator: "green",
+						});
+					} else {
+						frappe.msgprint({
+							title: __("Connection Failed"),
+							message: res.message || __("Unknown error"),
+							indicator: "red",
+						});
+					}
+				},
+			});
+		});
+
 		frm.add_custom_button(__("Sync Paid Invoices"), function () {
 			sync_paid_invoices(frm);
 		});
 
-		// Show connection status
-		if (frm.doc.access_token) {
+		// Connected only when token AND tenant are present (tenant is required for API calls).
+		if (frm.doc.access_token && frm.doc.tenant_id) {
 			frm.dashboard.add_indicator(__("Connected"), "green");
+		} else if (frm.doc.access_token && !frm.doc.tenant_id) {
+			frm.dashboard.add_indicator(__("Authorized (no tenant) — re-authorize"), "orange");
 		} else {
 			frm.dashboard.add_indicator(__("Not Connected"), "red");
 		}
@@ -188,7 +214,7 @@ function authorize(frm) {
 			redirect_uri: frm.doc.redirect_uri,
 			scope:
 				frm.doc.scope ||
-				"openid profile email accounting.transactions offline_access accounting.contacts",
+				"openid profile email offline_access accounting.transactions accounting.contacts accounting.settings",
 			state: state,
 		}).toString();
 
@@ -200,3 +226,4 @@ function authorize(frm) {
 		indicator: "blue",
 	});
 }
+

@@ -3,9 +3,161 @@ from datetime import datetime
 
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 from .base import get_xero_client
+from .item import ensure_xero_items_for_lines, resolve_line_item_code
+
+
+# ---------------------------------------------------------------------------
+# Line item helpers (shared by Sales Invoice and Credit Note line construction)
+# ---------------------------------------------------------------------------
+
+
+def _account_xero_tax_type(account_head):
+	"""Return the Xero TaxType stored on an ERPNext Account, if any."""
+	if not account_head:
+		return None
+	return frappe.db.get_value("Account", account_head, "custom_xero_tax_type")
+
+
+def get_line_tax_type(item, invoice):
+	"""Pick the Xero TaxType for a single Sales Invoice / Sales Return line.
+
+	Resolution order:
+	1. Per-line `item_tax_rate` (JSON of {account_head: rate}) – look up the first
+	   account_head whose ERPNext Account has `custom_xero_tax_type` set.
+	2. Invoice-level `taxes` table – first row whose `account_head` has
+	   `custom_xero_tax_type` set.
+	3. Fallback to "NONE" (no tax) so the request remains valid.
+	"""
+	raw = item.get("item_tax_rate") if hasattr(item, "get") else getattr(item, "item_tax_rate", None)
+	if raw:
+		try:
+			tax_map = frappe.parse_json(raw) or {}
+		except Exception:
+			tax_map = {}
+		for account_head in tax_map.keys():
+			tt = _account_xero_tax_type(account_head)
+			if tt:
+				return tt
+
+	for tax in getattr(invoice, "taxes", None) or []:
+		tt = _account_xero_tax_type(tax.get("account_head") if hasattr(tax, "get") else tax.account_head)
+		if tt:
+			return tt
+
+	return "NONE"
+
+
+def get_line_amount_types(invoice):
+	"""Map ERPNext tax setup to Xero's LineAmountTypes.
+
+	- No taxes on the invoice -> "NoTax"
+	- Any tax row with `included_in_print_rate` -> "Inclusive"
+	- Otherwise -> "Exclusive"
+	"""
+	taxes = getattr(invoice, "taxes", None) or []
+	if not taxes:
+		return "NoTax"
+
+	for tax in taxes:
+		incl = tax.get("included_in_print_rate") if hasattr(tax, "get") else getattr(tax, "included_in_print_rate", 0)
+		if cint(incl):
+			return "Inclusive"
+	return "Exclusive"
+
+
+def build_xero_line_item(item, invoice, line_amount_types="Exclusive", item_code_map=None):
+	"""Build a single Xero LineItem payload from an ERPNext invoice line.
+
+	ItemCode is only set when the item exists in Xero (see `ensure_xero_items_for_lines`).
+	Includes a resolved TaxType so Xero can calculate tax on the line.
+	"""
+	line_item = {
+		"Description": item.description or item.item_name,
+		"Quantity": str(flt(item.qty)),
+		"UnitAmount": str(flt(item.rate)),
+		"AccountCode": item.get("custom_account_code") or "200",
+	}
+
+	xero_item_code = resolve_line_item_code(item, item_code_map)
+	if xero_item_code:
+		line_item["ItemCode"] = xero_item_code
+
+	if line_amount_types == "NoTax":
+		line_item["TaxType"] = "NONE"
+	else:
+		line_item["TaxType"] = get_line_tax_type(item, invoice) or "NONE"
+
+	if item.get("discount_percentage"):
+		line_item["DiscountRate"] = str(item.discount_percentage)
+
+	return line_item
+
+
+@frappe.whitelist()
+def sync_selected_invoices(invoices):
+	"""
+	Bulk sync selected Sales Invoices to Xero.
+
+	Only sync invoices that:
+	- are submitted (`docstatus == 1`)
+	- have `custom_do_not_sync_to_xero` unchecked
+	- have no `custom_xero_invoice_number` yet
+	"""
+	invoice_names = frappe.parse_json(invoices) or []
+	if not isinstance(invoice_names, list):
+		frappe.throw("Invalid invoices payload")
+
+	results = {"created": [], "skipped": [], "failed": []}
+
+	for name in invoice_names:
+		try:
+			if not name:
+				continue
+
+			si = frappe.get_doc("Sales Invoice", name)
+
+			# Only sync submitted invoices
+			if si.docstatus != 1:
+				results["skipped"].append({"name": si.name, "reason": "Not submitted"})
+				continue
+
+			# Respect per-invoice opt-out
+			if getattr(si, "custom_do_not_sync_to_xero", 0):
+				results["skipped"].append({"name": si.name, "reason": "Xero sync disabled"})
+				continue
+
+			# Returns must be synced as Credit Notes (not invoices)
+			if getattr(si, "is_return", 0):
+				results["skipped"].append({"name": si.name, "reason": "Return invoice: sync as Credit Note"})
+				continue
+
+			# Only invoices not yet synced
+			if getattr(si, "custom_xero_invoice_number", None):
+				results["skipped"].append({"name": si.name, "reason": "Already synced"})
+				continue
+
+			res = create_invoice(si.name, update=False)
+
+			if not res or res.get("status") != "success":
+				results["failed"].append(
+					{"name": si.name, "error": (res or {}).get("message") or "Unknown error"}
+				)
+				continue
+
+			xero_invoice = res.get("data") or {}
+			xero_id = xero_invoice.get("InvoiceID")
+			if xero_id:
+				frappe.db.set_value("Sales Invoice", si.name, "custom_xero_invoice_number", xero_id)
+
+			results["created"].append({"name": si.name, "xero_invoice_id": xero_id})
+
+		except Exception as e:
+			results["failed"].append({"name": name, "error": str(e)})
+
+	return results
 
 
 @frappe.whitelist()
@@ -268,6 +420,15 @@ def create_invoice(doc: str, method: str | None = None, update_invoice: bool = F
 		elif doc.get("doctype") == "Sales Invoice":
 			invoice = doc
 
+		if getattr(invoice, "is_return", 0):
+			frappe.throw(
+				_(
+					"This Sales Invoice is a return (negative quantities). "
+					"Xero does not accept negative ACCREC invoices. "
+					"Please sync it as a Credit Note instead."
+				)
+			)
+
 		contact_id = get_customer_contact_id(invoice.customer)
 		if not contact_id:
 			frappe.throw(_("No Xero Contact ID found for customer: {0}").format(invoice.customer))
@@ -284,39 +445,19 @@ def create_invoice(doc: str, method: str | None = None, update_invoice: bool = F
 				if tax.charge_type == "On Net Total":
 					invoice_tax_rate += flt(tax.rate)
 
-		line_items = []
-		for item in invoice.items:
-			# AccountCode: item-level custom field → Xero Settings default → error if neither set
-			account_code = item.get("custom_account_code") or default_account_code
-			if not account_code:
-				frappe.throw(
-					_(
-						"No Xero Account Code set for item '{0}'.<br>"
-						"Either set a Default Account Code in Xero Settings, "
-						"or set custom_account_code on the Item."
-					).format(item.item_name or item.item_code)
-				)
+		# Decide LineAmountTypes once for the whole document
+		line_amount_types = get_line_amount_types(invoice)
 
-			# TaxType: derive from item's effective tax rate; fall back to invoice-level rate
-			item_tax_rate = flt(item.get("item_tax_rate") or invoice_tax_rate)
-			if item_tax_rate > 0:
-				# Non-zero tax — use the configured Xero tax type for taxable lines
-				tax_type = default_tax_type if default_tax_type != "NONE" else "OUTPUT"
-			else:
-				tax_type = "NONE"
+		# Create any missing items in Xero so ItemCode on lines is valid
+		item_code_map = ensure_xero_items_for_lines(invoice.items, client=client)
 
-			line_item = {
-				"Description": item.description or item.item_name,
-				"Quantity": str(item.qty),
-				"UnitAmount": str(item.rate),
-				"AccountCode": account_code,
-				"TaxType": tax_type,
-			}
-
-			if item.get("discount_percentage"):
-				line_item["DiscountRate"] = str(item.discount_percentage)
-
-			line_items.append(line_item)
+		# Prepare line items (with ItemCode + TaxType so Xero can compute tax)
+		line_items = [
+			build_xero_line_item(
+				item, invoice, line_amount_types=line_amount_types, item_code_map=item_code_map
+			)
+			for item in invoice.items
+		]
 
 		if not invoice.posting_date:
 			frappe.throw(_("Posting date is required for invoice {0}").format(invoice.name))
@@ -329,7 +470,7 @@ def create_invoice(doc: str, method: str | None = None, update_invoice: bool = F
 			"InvoiceNumber": invoice.name,
 			"DateString": invoice.posting_date.strftime("%Y-%m-%d") if invoice.posting_date else None,
 			"DueDateString": invoice.due_date.strftime("%Y-%m-%d") if invoice.due_date else None,
-			"LineAmountTypes": "Exclusive",
+			"LineAmountTypes": line_amount_types,
 			"LineItems": line_items,
 			"Reference": invoice.name,
 			"Status": "AUTHORISED",
