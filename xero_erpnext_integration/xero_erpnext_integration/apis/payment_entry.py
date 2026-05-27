@@ -28,7 +28,7 @@ def create_payment(doc: str, method: str | None = None):
 		if payment.references:
 			for ref in payment.references:
 				if ref.reference_doctype == "Sales Invoice":
-					invoice_xero_id = frappe.db.get_value(
+					invoice_xero_id = frappe.db.get_value(  # nosemgrep — loop exits via break on first match; only one DB call is ever made
 						"Sales Invoice", ref.reference_name, "custom_xero_invoice_number"
 					)
 					break

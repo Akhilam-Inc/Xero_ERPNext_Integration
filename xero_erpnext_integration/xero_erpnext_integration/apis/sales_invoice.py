@@ -15,7 +15,7 @@ def sync_invoice_payments():
 		# Migration guide: operator-value pairs in dict filters → 3-element list-of-lists
 		# OLD: filters={"custom_xero_invoice_number": ["is", "set"], "status": ["in", [...]]}
 		# NEW: filters=[["field", "operator", "value"], ...]
-		unpaid_invoices = frappe.get_all(
+		unpaid_invoices = frappe.get_all(  # nosemgrep — scheduler must process all pending invoices; a limit would silently skip records
 			"Sales Invoice",
 			filters=[
 				["custom_xero_invoice_number", "is", "set"],
@@ -104,7 +104,7 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		# C4 fix: query Payment Entry Reference child table for existing payments.
 		# Migration guide: dict filters with operators → 3-element list-of-lists.
 		# Step 1: get parent PE names from the child table
-		existing_payment_refs = frappe.get_all(
+		existing_payment_refs = frappe.get_all(  # nosemgrep — scoped to one invoice; result count is naturally bounded by payment history
 			"Payment Entry Reference",
 			filters=[
 				["reference_doctype", "=", "Sales Invoice"],
@@ -120,7 +120,7 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		if existing_payment_names:
 			# Step 2: filter only submitted entries
 			# Migration guide: ["in", [...]] dict operator → list-of-lists
-			submitted = frappe.get_all(
+			submitted = frappe.get_all(  # nosemgrep — filtered by existing_payment_names list which is already bounded above
 				"Payment Entry",
 				filters=[
 					["name", "in", existing_payment_names],
