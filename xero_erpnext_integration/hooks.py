@@ -46,6 +46,12 @@ doctype_js = {
 	"Contact": "xero_erpnext_integration/custom_scripts/contact.js",
 	"Sales Invoice": "xero_erpnext_integration/custom_scripts/sales_invoice.js",
 	"Payment Entry": "xero_erpnext_integration/custom_scripts/payment_entry.js",
+	"Account": "xero_erpnext_integration/custom_scripts/account.js",
+}
+
+doctype_list_js = {
+	"Sales Invoice": "xero_erpnext_integration/custom_scripts/sales_invoice_list.js",
+	"Account": "xero_erpnext_integration/custom_scripts/account_list.js",
 }
 
 scheduler_events = {
@@ -54,7 +60,9 @@ scheduler_events = {
 			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.sync_invoice_payments"
 		],
 		"*/30 * * * *": [
-			"xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync.sync_voided_invoices"
+			"xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync.sync_voided_invoices",
+			"xero_erpnext_integration.xero_erpnext_integration.schedulers.credit_note_sync.push_sales_returns",
+			"xero_erpnext_integration.xero_erpnext_integration.schedulers.credit_note_sync.pull_credit_notes",
 		],
 	},
 }
@@ -65,7 +73,10 @@ doc_events = {
 		# "on_submit": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.on_submit",
 		"on_cancel": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.on_cancel",
 		# "before_submit": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.before_submit",
-	}
+	},
+	"Account": {
+		"on_update": "xero_erpnext_integration.xero_erpnext_integration.custom_scripts.account.on_update",
+	},
 }
 
 fixtures = [

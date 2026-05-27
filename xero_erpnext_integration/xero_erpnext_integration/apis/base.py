@@ -18,6 +18,12 @@ class SupportedHTTPMethod(Enum):
 	DELETE = "DELETE"
 
 
+# Scopes required for invoices, contacts, and tax rates (/TaxRates needs accounting.settings).
+XERO_DEFAULT_SCOPE = (
+	"openid profile email offline_access " "accounting.transactions accounting.contacts accounting.settings"
+)
+
+
 class XeroAPIClient:
 	"""
 	Xero API Client for OAuth 2.0 authentication and API calls
@@ -41,16 +47,48 @@ class XeroAPIClient:
 		self.tenant_id = self.settings.tenant_id
 
 		self.headers = {"Content-Type": "application/json", "Accept": "application/json"}
-
 		if self.access_token:
 			self.headers["Authorization"] = f"Bearer {self.access_token}"
+		if self.tenant_id:
+			self.headers["Xero-Tenant-Id"] = self.tenant_id
 
+	def _reload_credentials_from_db(self):
+		"""Reload tokens/tenant from Xero Settings and rebuild API headers."""
+		self.settings.reload()
+		self.access_token = self._safe_get_password("access_token") or ""
+		self.refresh_token = self._safe_get_password("refresh_token") or ""
+		self.tenant_id = (self.settings.tenant_id or "").strip()
+		self.client_secret = self._safe_get_password("client_secret")
+		self.headers = {
+			"Content-Type": "application/json",
+			"Accept": "application/json",
+		}
+		if self.access_token:
+			self.headers["Authorization"] = f"Bearer {self.access_token}"
 		if self.tenant_id:
 			self.headers["Xero-Tenant-Id"] = self.tenant_id
 
 	def _safe_get_password(self, field):
 		"""Return the decrypted password field value, or None if not yet set."""
 		return self.settings.get_password(field, raise_exception=False) or None
+
+	def _validate_api_prerequisites(self):
+		"""Fail fast with a clear message before calling the Xero API."""
+		if not self.settings.enable:
+			frappe.throw(_("Xero integration is disabled in Xero Settings."))
+		if not self.access_token:
+			frappe.throw(_("No access token. Please authorize from Xero Settings."))
+		if not self.refresh_token:
+			frappe.throw(_("No refresh token. Please re-authorize from Xero Settings."))
+		if not self.tenant_id:
+			frappe.throw(
+				_(
+					"Xero Tenant ID is missing. Open Xero Settings and click Authorize again "
+					"so the tenant connection is saved."
+				)
+			)
+		if not self.client_id or not self.client_secret:
+			frappe.throw(_("Client ID or Client Secret is missing in Xero Settings."))
 
 	def get_authorization_url(self, state=None):
 		"""Generate OAuth 2.0 authorization URL"""
@@ -62,7 +100,7 @@ class XeroAPIClient:
 				"response_type": "code",
 				"client_id": self.client_id,
 				"redirect_uri": self.redirect_uri,
-				"scope": self.scope,
+				"scope": self.scope or XERO_DEFAULT_SCOPE,
 				"state": state or frappe.generate_hash(length=10),
 			}
 
@@ -127,12 +165,13 @@ class XeroAPIClient:
 
 				self.settings.access_token = access_token
 				self.settings.refresh_token = refresh_token
-				self.settings.scope = scope
+				self.settings.scope = scope or XERO_DEFAULT_SCOPE
 
 				expires_at = datetime.now() + timedelta(seconds=expires_in)
-				self.settings.token_expires_at = expires_at
+				self.settings.token_expires_at = expires_at.isoformat()
 
 				self.access_token = access_token
+				self.refresh_token = refresh_token
 				self.headers["Authorization"] = f"Bearer {access_token}"
 
 				self._get_and_save_tenant_info()
@@ -252,18 +291,31 @@ class XeroAPIClient:
 		except Exception as e:
 			frappe.log_error(title="Xero Tenant Info", message=f"Failed to get tenant info: {e!s}")
 
+	def _persist_tokens_to_settings(self):
+		"""Write current tokens/tenant to Xero Settings and refresh in-memory headers."""
+		self.settings.flags.ignore_permissions = True
+		self.settings.save()
+		frappe.db.commit()
+		self._reload_credentials_from_db()
+
 	def refresh_access_token(self):
-		"""Refresh access token using refresh token"""
+		"""Refresh access token using refresh token (Xero requires HTTP Basic auth)."""
 		try:
+			# Always read the latest refresh token from DB (may have been rotated).
+			self._reload_credentials_from_db()
+
 			if not self.refresh_token:
+				frappe.log_error("No refresh token in Xero Settings", "Xero Token Refresh")
+				return False
+
+			if not self.client_id or not self.client_secret:
+				frappe.log_error("Missing client_id or client_secret", "Xero Token Refresh")
 				return False
 
 			# A6 fix: renamed dict to refresh_payload to avoid collision with response.json() below
 			refresh_payload = {
 				"grant_type": "refresh_token",
 				"refresh_token": self.refresh_token,
-				"client_id": self.client_id,
-				"client_secret": self.client_secret,
 			}
 
 			headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -288,21 +340,21 @@ class XeroAPIClient:
 				self.headers["Authorization"] = f"Bearer {self.access_token}"
 
 				return True
-			else:
-				frappe.log_error(
-					title="Xero Token Refresh",
-					message=f"Token refresh failed: {response.text}",
-				)
-				return False
+
+			frappe.log_error(
+				title="Xero Token Refresh",
+				message=f"Token refresh failed ({response.status_code}): {response.text}",
+			)
+			return False
 
 		except Exception as e:
 			frappe.log_error(title="Xero Token Refresh", message=f"Token refresh error: {e!s}")
 			return False
 
 	def _ensure_valid_token(self):
-		"""Ensure we have a valid access token"""
+		"""Refresh the access token if it is expired or about to expire."""
 		if not self.access_token:
-			frappe.throw(_("No access token available. Please authorize the application."))
+			frappe.throw(_("No access token available. Please authorize from Xero Settings."))
 
 		if self.settings.token_expires_at:
 			expires_at = self.settings.token_expires_at
@@ -330,8 +382,10 @@ class XeroAPIClient:
 	def make_request(self, method, endpoint, data=None, params=None):
 		"""Make authenticated request to Xero API"""
 		response = None
+		token_refreshed = False
 		try:
 			self._ensure_valid_token()
+			self._reload_credentials_from_db()
 
 			url = f"{self.base_url}/{endpoint.lstrip('/')}"
 			request_headers = self.headers.copy()
@@ -346,21 +400,40 @@ class XeroAPIClient:
 					return response.json()
 				except ValueError:
 					return {"message": "Success", "data": response.text}
-			elif response.status_code == 401:
-				if self.refresh_access_token():
-					request_headers["Authorization"] = f"Bearer {self.access_token}"
-					response = self._dispatch(method, url, request_headers, data, params)
 
-					if response.status_code in [200, 201]:
-						try:
-							return response.json()
-						except ValueError:
-							return {"message": "Success", "data": response.text}
+			if response.status_code == 401 and not token_refreshed:
+				# One refresh + retry (401 often means expired token OR missing scope/tenant).
+				if not self.refresh_access_token():
+					self._raise_auth_error(
+						response,
+						_(
+							"Xero rejected the request and the refresh token could not be renewed. "
+							"Re-authorize from Xero Settings."
+						),
+					)
 
-				frappe.throw(_("Authentication failed. Please re-authorize the application."))
-			else:
-				error_msg = f"API request failed: {response.status_code} - {response.text}"
-				frappe.throw(_(error_msg))
+				token_refreshed = True
+				self._reload_credentials_from_db()
+				request_headers = self.headers.copy()
+				response = self._dispatch(method, url, request_headers, data, params)
+				self._log_request(method, url, data, params, response)
+
+			if response.status_code in [200, 201]:
+				try:
+					return response.json()
+				except Exception:
+					return {"message": "Success", "data": response.text}
+
+			self._raise_auth_error(
+				response,
+				_(
+					"Xero still rejected the request after refreshing the token. "
+					"Re-authorize from Xero Settings and ensure scope includes "
+					"'accounting.settings' (required for Tax Rates)."
+				),
+			)
+
+			self._raise_xero_error(response)
 
 		except Exception as e:
 			# A5 fix: guard against response being None before passing to _log_response
@@ -368,6 +441,67 @@ class XeroAPIClient:
 				self._log_response(response)
 			frappe.log_error(title="Xero API Request", message=f"API request failed: {e!s}")
 			raise
+
+	def _raise_auth_error(self, response, prefix_message):
+		"""Throw with the real Xero response body when auth keeps failing."""
+		detail = ""
+		if response is not None:
+			try:
+				payload = response.json()
+				detail = (
+					payload.get("Detail")
+					or payload.get("Title")
+					or payload.get("Message")
+					or payload.get("error_description")
+					or response.text
+				)
+			except Exception:
+				detail = response.text or ""
+
+		granted_scope = (self.settings.scope or "").lower()
+		scope_hint = ""
+		if "accounting.settings" not in granted_scope:
+			scope_hint = (
+				" Your saved scope does not include 'accounting.settings', which is required "
+				"for Tax Rates. Click Authorize in Xero Settings again."
+			)
+
+		frappe.throw(_(f"{prefix_message}{scope_hint} {detail}".strip()))
+
+	def _raise_xero_error(self, response):
+		"""Build a concise error message from a failed Xero response and throw."""
+		status = response.status_code if response is not None else "?"
+		text = response.text if response is not None else ""
+		error_msg = f"API request failed: {status} - {text}"
+
+		try:
+			payload = response.json()
+		except Exception:
+			payload = None
+
+		if isinstance(payload, dict):
+			# Standard Xero validation error envelope
+			elements = payload.get("Elements") or []
+			validation_errors = (elements[0] or {}).get("ValidationErrors") if elements else None
+			if validation_errors:
+				msgs = [ve.get("Message") for ve in validation_errors if ve.get("Message")]
+				if msgs:
+					error_msg = "Xero validation error: " + " ; ".join(msgs)
+
+			# OAuth/scope-style error
+			problem = payload.get("Title") or payload.get("Detail") or payload.get("error_description")
+			if problem and "validation" not in error_msg.lower():
+				error_msg = f"Xero error ({status}): {problem}"
+
+			# Plain `Message` field used by some endpoints
+			if not validation_errors and payload.get("Message"):
+				error_msg = f"Xero error ({status}): {payload.get('Message')}"
+
+		# Hint when the access token was issued without accounting.settings scope
+		if status == 403 and "scope" not in error_msg.lower():
+			error_msg += " (If you recently added Tax Rate sync, re-authorize Xero so the new 'accounting.settings' scope is granted.)"
+
+		frappe.throw(_(error_msg))
 
 	def test_connection(self):
 		"""Test connection to Xero API"""
@@ -384,18 +518,26 @@ class XeroAPIClient:
 			if not self.tenant_id:
 				return {"status": "error", "message": "No tenant selected. Please complete authorization."}
 
-			response = self.make_request("GET", "Organisation")
+			# Test organisation + tax rates (tax rates need accounting.settings scope).
+			org_response = self.make_request("GET", "Organisation")
+			tax_response = self.make_request("GET", "TaxRates")
 
-			if response and "Organisations" in response:
-				org = response["Organisations"][0] if response["Organisations"] else {}
+			if org_response and "Organisations" in org_response:
+				org = org_response["Organisations"][0] if org_response["Organisations"] else {}
+				tax_count = len((tax_response or {}).get("TaxRates") or [])
+				scope = self.settings.scope or ""
+				has_tax_scope = "accounting.settings" in scope
 				return {
 					"status": "success",
-					"message": "Connection successful",
+					"message": f"Connection OK. {tax_count} tax rate(s) readable from Xero.",
 					"organisation": {
 						"name": org.get("Name"),
 						"country_code": org.get("CountryCode"),
 						"currency_code": org.get("BaseCurrency"),
 					},
+					"tax_rates_count": tax_count,
+					"scope": scope,
+					"has_accounting_settings_scope": has_tax_scope,
 				}
 			else:
 				return {"status": "error", "message": "Failed to retrieve organisation information"}
@@ -446,7 +588,8 @@ class XeroAPIClient:
 
 	def _log_request(self, method, url, data, params, response):
 		"""Log API request"""
-		if not self.settings.debug_mode:
+		# Always log errors; log successes only in debug mode
+		if not self.settings.debug_mode and not (response and response.status_code >= 400):
 			return
 
 		try:
@@ -497,13 +640,20 @@ class XeroAPIClient:
 			return
 
 	def _log_response(self, response):
-		"""Log API response"""
-		if not self.settings.debug_mode:
+		"""Log API response by updating the most recent Xero API Log entry.
+
+		Note: `Xero API Log` doesn't have a `tenant_id` column, so we simply pick
+		the latest log entry created in this request.
+		"""
+		if not self.settings.debug_mode or response is None:
 			return
 
 		try:
 			logs = frappe.get_all(
-				"Xero API Log", filters={"tenant_id": self.tenant_id}, order_by="creation desc", limit=1
+				"Xero API Log",
+				fields=["name"],
+				order_by="creation desc",
+				limit=1,
 			)
 
 			if logs:
@@ -514,7 +664,7 @@ class XeroAPIClient:
 				# A2 fix: field is "response" not "response_data" (confirmed in xero_api_log.json)
 				try:
 					log_doc.response = json.dumps(response.json(), indent=2)
-				except ValueError:
+				except Exception:
 					log_doc.response = response.text
 
 				log_doc.save(ignore_permissions=True)

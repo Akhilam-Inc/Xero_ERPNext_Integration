@@ -56,7 +56,13 @@ function add_xero_buttons(frm) {
 		frm.doc.contact_person &&
 		!frm.doc.custom_do_not_sync_to_xero &&
 		!frm.doc.custom_contact_id;
+	const canSyncCreditNote =
+		frm.doc.is_return &&
+		frm.doc.docstatus == 1 &&
+		!frm.doc.custom_do_not_sync_to_xero &&
+		!frm.doc.custom_xero_credit_note_id;
 	const canSyncInvoice =
+		!frm.doc.is_return &&
 		!frm.doc.custom_xero_invoice_number &&
 		frm.doc.docstatus === 1 &&
 		!frm.doc.custom_do_not_sync_to_xero;
@@ -66,7 +72,26 @@ function add_xero_buttons(frm) {
 		frm.add_custom_button(__("Sync Contact in Xero"), () => fetch_xero_contacts(frm));
 	}
 
-	if (canSyncInvoice) {
+	if (canSyncCreditNote) {
+		frm.add_custom_button(
+			__("Sync Credit Note in Xero"),
+			() => {
+				frappe.call({
+					method: "xero_erpnext_integration.xero_erpnext_integration.apis.credit_note.create_credit_note",
+					args: { sales_return: frm.doc.name, update: false },
+					callback(r) {
+						if (r.message && r.message.status === "success") {
+							frappe.msgprint(__("Credit Note created successfully in Xero"));
+							frm.reload_doc();
+						} else {
+							frappe.msgprint(__("Failed to create credit note in Xero"));
+						}
+					},
+				});
+			},
+			__("Actions")
+		);
+	} else if (canSyncInvoice) {
 		frm.add_custom_button(
 			__("Sync Invoice in Xero"),
 			() => create_invoice_in_xero(frm),
