@@ -59,8 +59,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          # Frappe v16 requires Node 22+
-          node-version: 22
+          # Frappe v16.19+ requires Node 24+ (package.json engines field)
+          node-version: 24
           check-latest: true
 
       - name: Enable Yarn via corepack
