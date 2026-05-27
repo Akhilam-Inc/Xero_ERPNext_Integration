@@ -63,6 +63,10 @@ jobs:
           node-version: 22
           check-latest: true
 
+      - name: Enable Yarn via corepack
+        # Node 22 does not bundle yarn v1 by default; corepack activates it
+        run: corepack enable
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
