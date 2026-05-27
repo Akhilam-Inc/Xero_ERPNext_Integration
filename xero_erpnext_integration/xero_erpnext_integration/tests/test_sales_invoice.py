@@ -356,9 +356,7 @@ class TestMapContactToXero(FrappeTestCase):
 			mock_sinv = MagicMock()
 			# Accept *args/**kwargs so Frappe v16 internal calls with keyword args don't crash
 			mock_get_doc.side_effect = lambda *args, **kwargs: (
-				mock_contact
-				if (args[0] if args else kwargs.get("doctype")) == "Contact"
-				else mock_sinv
+				mock_contact if (args[0] if args else kwargs.get("doctype")) == "Contact" else mock_sinv
 			)
 			result = map_contact_to_xero("contact-xero-id", self.contact.name, "SINV-FAKE")
 

@@ -78,8 +78,10 @@ class TestGetAccountCode(FrappeTestCase):
 	def test_returns_default_code_880(self):
 		# get_account_code uses frappe.db.get_value / frappe.db.get_single_value — not frappe.get_doc
 		with (
-			patch("frappe.db.get_value", return_value=None),          # no custom_xero_account_code on account
-			patch("frappe.db.get_single_value", return_value="880"),  # default_account_code from Xero Settings
+			patch("frappe.db.get_value", return_value=None),  # no custom_xero_account_code on account
+			patch(
+				"frappe.db.get_single_value", return_value="880"
+			),  # default_account_code from Xero Settings
 		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.payment_entry import get_account_code
 
