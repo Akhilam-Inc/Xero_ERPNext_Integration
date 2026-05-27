@@ -76,15 +76,18 @@ class TestCreatePayment(FrappeTestCase):
 
 class TestGetAccountCode(FrappeTestCase):
 	def test_returns_default_code_880(self):
-		mock_account = MagicMock()
-		with patch("frappe.get_doc", return_value=mock_account):
+		# get_account_code uses frappe.db.get_value / frappe.db.get_single_value — not frappe.get_doc
+		with (
+			patch("frappe.db.get_value", return_value=None),          # no custom_xero_account_code on account
+			patch("frappe.db.get_single_value", return_value="880"),  # default_account_code from Xero Settings
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.payment_entry import get_account_code
 
 			result = get_account_code("Cash - _TC")
 		self.assertEqual(result, "880")
 
 	def test_returns_none_on_missing_account(self):
-		with patch("frappe.get_doc", side_effect=frappe.DoesNotExistError("Account not found")):
+		with patch("frappe.db.get_value", side_effect=Exception("Account not found")):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.payment_entry import get_account_code
 
 			result = get_account_code("Non-Existent Account")
@@ -99,14 +102,13 @@ class TestSyncPaymentToXero(FrappeTestCase):
 		mock_factory.return_value = mock_client
 
 		mock_payment = _make_mock_payment()
-		sinv = MagicMock()
-		sinv.get.return_value = "xero-inv-id"
 
 		with (
-			patch(
-				"frappe.get_doc",
-				side_effect=lambda dt, name=None: (mock_payment if dt == "Payment Entry" else sinv),
-			),
+			# frappe.get_doc is called exactly once (sync_payment_to_xero loads the PE doc);
+			# create_payment receives the doc object directly so get_doc is not called again.
+			patch("frappe.get_doc", return_value=mock_payment),
+			# create_payment uses frappe.db.get_value to fetch custom_xero_invoice_number
+			patch("frappe.db.get_value", return_value="xero-inv-id"),
 			patch(
 				"xero_erpnext_integration.xero_erpnext_integration.apis.payment_entry.get_account_code",
 				return_value="880",

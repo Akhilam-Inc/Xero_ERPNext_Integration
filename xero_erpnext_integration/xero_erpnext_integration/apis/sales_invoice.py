@@ -524,7 +524,11 @@ def get_customer_contact_id(customer: str) -> str | None:
 
 		dynamic_links = frappe.get_all(
 			"Dynamic Link",
-			filters={"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"},
+			filters=[
+				["link_doctype", "=", "Customer"],
+				["link_name", "=", customer],
+				["parenttype", "=", "Contact"],
+			],
 			fields=["parent"],
 			limit=1,
 		)
@@ -535,5 +539,9 @@ def get_customer_contact_id(customer: str) -> str | None:
 			return contact.get("custom_contact_id")
 
 		return None
-	except Exception:
+	except Exception as e:
+		frappe.log_error(
+			title="Get Customer Contact ID",
+			message=f"Error getting contact id for customer {customer}: {e!s}",
+		)
 		frappe.throw(_("Error getting contact id for the selected customer"))
