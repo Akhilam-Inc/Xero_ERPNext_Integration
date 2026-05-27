@@ -70,7 +70,7 @@ class XeroAPIClient:
 			return f"{self.auth_url}?{urlencode(params)}"
 
 		except Exception as e:
-			frappe.log_error(title="Xero Auth URL", message=f"Failed to generate authorization URL: {str(e)}")
+			frappe.log_error(title="Xero Auth URL", message=f"Failed to generate authorization URL: {e!s}")
 			raise
 
 	def exchange_code_for_token(self, state=None):
@@ -111,7 +111,7 @@ class XeroAPIClient:
 						title="Xero Token Exchange",
 						message=f"Invalid JSON in token response: {response.text}",
 					)
-					raise Exception(f"Invalid response format from Xero: {str(e)}")
+					raise Exception(f"Invalid response format from Xero: {e!s}")
 
 				if not token_response.get("access_token"):
 					frappe.log_error(
@@ -210,7 +210,7 @@ class XeroAPIClient:
 				raise Exception(error_msg)
 
 		except Exception as e:
-			frappe.log_error(title="Xero Token Exchange", message=f"Token exchange error: {str(e)}")
+			frappe.log_error(title="Xero Token Exchange", message=f"Token exchange error: {e!s}")
 			raise
 
 	def _get_and_save_tenant_info(self):
@@ -250,7 +250,7 @@ class XeroAPIClient:
 				)
 
 		except Exception as e:
-			frappe.log_error(title="Xero Tenant Info", message=f"Failed to get tenant info: {str(e)}")
+			frappe.log_error(title="Xero Tenant Info", message=f"Failed to get tenant info: {e!s}")
 
 	def refresh_access_token(self):
 		"""Refresh access token using refresh token"""
@@ -296,7 +296,7 @@ class XeroAPIClient:
 				return False
 
 		except Exception as e:
-			frappe.log_error(title="Xero Token Refresh", message=f"Token refresh error: {str(e)}")
+			frappe.log_error(title="Xero Token Refresh", message=f"Token refresh error: {e!s}")
 			return False
 
 	def _ensure_valid_token(self):
@@ -366,7 +366,7 @@ class XeroAPIClient:
 			# A5 fix: guard against response being None before passing to _log_response
 			if response is not None:
 				self._log_response(response)
-			frappe.log_error(title="Xero API Request", message=f"API request failed: {str(e)}")
+			frappe.log_error(title="Xero API Request", message=f"API request failed: {e!s}")
 			raise
 
 	def test_connection(self):
@@ -414,7 +414,7 @@ class XeroAPIClient:
 			return None
 
 		except Exception as e:
-			frappe.log_error(title="Xero Create Invoice", message=f"Failed to create invoice: {str(e)}")
+			frappe.log_error(title="Xero Create Invoice", message=f"Failed to create invoice: {e!s}")
 			return None
 
 	def get_invoice(self, invoice_id):
@@ -427,7 +427,7 @@ class XeroAPIClient:
 			return None
 
 		except Exception as e:
-			frappe.log_error(title="Xero Get Invoice", message=f"Failed to get invoice: {str(e)}")
+			frappe.log_error(title="Xero Get Invoice", message=f"Failed to get invoice: {e!s}")
 			return None
 
 	def get_payments(self, invoice_id=None):
@@ -441,7 +441,7 @@ class XeroAPIClient:
 			return response.get("Payments", []) if response else []
 
 		except Exception as e:
-			frappe.log_error(title="Xero Get Payments", message=f"Failed to get payments: {str(e)}")
+			frappe.log_error(title="Xero Get Payments", message=f"Failed to get payments: {e!s}")
 			return []
 
 	def _log_request(self, method, url, data, params, response):
@@ -493,7 +493,7 @@ class XeroAPIClient:
 			frappe.get_doc(log_data).insert(ignore_permissions=True)
 
 		except Exception as e:
-			frappe.log_error(title="Xero Request Log", message=f"Failed to log request: {str(e)}")
+			frappe.log_error(title="Xero Request Log", message=f"Failed to log request: {e!s}")
 			return
 
 	def _log_response(self, response):
@@ -520,7 +520,7 @@ class XeroAPIClient:
 				log_doc.save(ignore_permissions=True)
 
 		except Exception as e:
-			frappe.log_error(title="Xero Response Log", message=f"Failed to log response: {str(e)}")
+			frappe.log_error(title="Xero Response Log", message=f"Failed to log response: {e!s}")
 
 
 # Utility function to get Xero client

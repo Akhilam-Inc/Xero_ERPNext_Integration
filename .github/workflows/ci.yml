@@ -52,12 +52,14 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          # Frappe v16 requires Python 3.12+ (PEP 695 type alias syntax)
+          python-version: '3.12'
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Frappe v16 requires Node 22+
+          node-version: 22
           check-latest: true
 
       - name: Cache pip

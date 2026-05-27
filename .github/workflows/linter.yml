@@ -39,7 +39,10 @@ jobs:
           git push
 
       - name: Download Semgrep rules
-        run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
+        run: |
+          git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
+          # Add Akhilam custom performance rules (N+1, unbounded fetches, bulk ops)
+          cp .github/semgrep/performance.yml frappe-semgrep-rules/rules/performance.yml
 
       - name: Run Semgrep rules
         run: |

@@ -54,7 +54,7 @@ def create_payment_from_xero(xero_invoice_id: str, payment_amount: float) -> dic
 		# A3 fix: use frappe.log_error (creates DB Error Log record) not frappe.logger().error
 		frappe.log_error(
 			title="Xero Payment from Xero",
-			message=f"Failed to create payment for Xero invoice {xero_invoice_id}: {str(e)}",
+			message=f"Failed to create payment for Xero invoice {xero_invoice_id}: {e!s}",
 		)
 		return {"status": "error", "message": str(e)}
 
