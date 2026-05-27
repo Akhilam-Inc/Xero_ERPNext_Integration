@@ -252,9 +252,7 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		}
 
 	except Exception as e:
-		frappe.log_error(
-			title="Xero Payment Entry Creation", message=f"Error creating payment entry: {e!s}"
-		)
+		frappe.log_error(title="Xero Payment Entry Creation", message=f"Error creating payment entry: {e!s}")
 		return {"status": "error", "message": str(e)}
 
 
@@ -452,9 +450,7 @@ def create_contact_and_map(contact_person: str, sales_invoice: str) -> dict:
 		return {"status": "error", "message": "Failed to create contact in Xero"}
 
 	except Exception as e:
-		frappe.log_error(
-			title="Create Contact and Map", message=f"Failed to create and map contact: {e!s}"
-		)
+		frappe.log_error(title="Create Contact and Map", message=f"Failed to create and map contact: {e!s}")
 		return {"status": "error", "message": str(e)}
 
 
