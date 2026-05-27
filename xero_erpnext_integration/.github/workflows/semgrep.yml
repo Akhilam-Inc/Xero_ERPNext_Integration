@@ -20,9 +20,9 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          # Frappe v16 minimum Python version — matches app runtime so semgrep
-          # correctly parses Python 3.11 syntax (e.g. str | None union types)
-          python-version: "3.11"
+          # Frappe v16 requires Python 3.12+ — uses PEP 695 `type X = ...` syntax
+          # which is a SyntaxError on 3.11 and below
+          python-version: "3.12"
 
       - name: Install semgrep
         run: pip install semgrep
