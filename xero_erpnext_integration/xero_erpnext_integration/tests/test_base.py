@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-
 SETTINGS_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.base.frappe.get_single"
 REQUESTS_POST = "xero_erpnext_integration.xero_erpnext_integration.apis.base.requests.post"
 REQUESTS_GET = "xero_erpnext_integration.xero_erpnext_integration.apis.base.requests.get"
@@ -34,8 +33,8 @@ def _mock_settings(**overrides):
 # XeroAPIClient.refresh_access_token
 # ---------------------------------------------------------------------------
 
-class TestRefreshAccessToken(FrappeTestCase):
 
+class TestRefreshAccessToken(FrappeTestCase):
 	def test_returns_true_on_successful_refresh(self):
 		mock_settings = _mock_settings()
 		mock_response = MagicMock()
@@ -46,9 +45,12 @@ class TestRefreshAccessToken(FrappeTestCase):
 			"expires_in": 1800,
 		}
 
-		with patch(SETTINGS_PATH, return_value=mock_settings), \
-			 patch(REQUESTS_POST, return_value=mock_response):
+		with (
+			patch(SETTINGS_PATH, return_value=mock_settings),
+			patch(REQUESTS_POST, return_value=mock_response),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			result = client.refresh_access_token()
 
@@ -61,9 +63,12 @@ class TestRefreshAccessToken(FrappeTestCase):
 		mock_response.status_code = 401
 		mock_response.text = "Unauthorized"
 
-		with patch(SETTINGS_PATH, return_value=mock_settings), \
-			 patch(REQUESTS_POST, return_value=mock_response):
+		with (
+			patch(SETTINGS_PATH, return_value=mock_settings),
+			patch(REQUESTS_POST, return_value=mock_response),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			result = client.refresh_access_token()
 
@@ -74,6 +79,7 @@ class TestRefreshAccessToken(FrappeTestCase):
 
 		with patch(SETTINGS_PATH, return_value=mock_settings):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			client.refresh_token = None
 			result = client.refresh_access_token()
@@ -85,13 +91,14 @@ class TestRefreshAccessToken(FrappeTestCase):
 # XeroAPIClient._ensure_valid_token
 # ---------------------------------------------------------------------------
 
-class TestEnsureValidToken(FrappeTestCase):
 
+class TestEnsureValidToken(FrappeTestCase):
 	def test_throws_when_no_access_token(self):
 		mock_settings = _mock_settings(access_token=None)
 
 		with patch(SETTINGS_PATH, return_value=mock_settings):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			client.access_token = None
 			self.assertRaises(frappe.ValidationError, client._ensure_valid_token)
@@ -100,16 +107,19 @@ class TestEnsureValidToken(FrappeTestCase):
 		expired_time = (datetime.now() - timedelta(minutes=1)).isoformat()
 		mock_settings = _mock_settings(token_expires_at=expired_time)
 
-		with patch(SETTINGS_PATH, return_value=mock_settings), \
-			 patch.object(
+		with (
+			patch(SETTINGS_PATH, return_value=mock_settings),
+			patch.object(
 				__import__(
 					"xero_erpnext_integration.xero_erpnext_integration.apis.base",
 					fromlist=["XeroAPIClient"],
 				).XeroAPIClient,
 				"refresh_access_token",
 				return_value=True,
-			 ) as mock_refresh:
+			) as mock_refresh,
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			client.settings.token_expires_at = expired_time
 			client._ensure_valid_token()
@@ -121,23 +131,24 @@ class TestEnsureValidToken(FrappeTestCase):
 # XeroAPIClient.make_request
 # ---------------------------------------------------------------------------
 
-class TestMakeRequest(FrappeTestCase):
 
+class TestMakeRequest(FrappeTestCase):
 	def test_successful_get_returns_parsed_json(self):
 		mock_settings = _mock_settings()
 		mock_response = MagicMock()
 		mock_response.status_code = 200
 		mock_response.json.return_value = {"Invoices": []}
 
-		with patch(SETTINGS_PATH, return_value=mock_settings), \
-			 patch(REQUESTS_GET, return_value=mock_response), \
-			 patch(
+		with (
+			patch(SETTINGS_PATH, return_value=mock_settings),
+			patch(REQUESTS_GET, return_value=mock_response),
+			patch(
 				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._ensure_valid_token"
-			 ), \
-			 patch(
-				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_request"
-			 ):
+			),
+			patch("xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_request"),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			result = client.make_request("GET", "/Invoices")
 
@@ -154,19 +165,20 @@ class TestMakeRequest(FrappeTestCase):
 		second_response.status_code = 200
 		second_response.json.return_value = {"Contacts": []}
 
-		with patch(SETTINGS_PATH, return_value=mock_settings), \
-			 patch(REQUESTS_GET, side_effect=[first_response, second_response]), \
-			 patch(
+		with (
+			patch(SETTINGS_PATH, return_value=mock_settings),
+			patch(REQUESTS_GET, side_effect=[first_response, second_response]),
+			patch(
 				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._ensure_valid_token"
-			 ), \
-			 patch(
-				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_request"
-			 ), \
-			 patch(
+			),
+			patch("xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_request"),
+			patch(
 				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient.refresh_access_token",
 				return_value=True,
-			 ):
+			),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			result = client.make_request("GET", "/Contacts")
 
@@ -178,17 +190,16 @@ class TestMakeRequest(FrappeTestCase):
 		mock_response.status_code = 500
 		mock_response.text = "Internal Server Error"
 
-		with patch(SETTINGS_PATH, return_value=mock_settings), \
-			 patch(REQUESTS_GET, return_value=mock_response), \
-			 patch(
+		with (
+			patch(SETTINGS_PATH, return_value=mock_settings),
+			patch(REQUESTS_GET, return_value=mock_response),
+			patch(
 				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._ensure_valid_token"
-			 ), \
-			 patch(
-				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_request"
-			 ), \
-			 patch(
-				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_response"
-			 ):
+			),
+			patch("xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_request"),
+			patch("xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_response"),
+		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
 			client = XeroAPIClient()
 			self.assertRaises(Exception, client.make_request, "GET", "/Invoices")

@@ -22,7 +22,14 @@ def sync_invoice_payments():
 				["status", "in", ["Draft", "Unpaid", "Overdue", "Partly Paid"]],
 				["workflow_state", "in", ["Synced to Xero", "Submitted"]],
 			],
-			fields=["name", "customer", "grand_total", "outstanding_amount", "custom_xero_invoice_number", "company"],
+			fields=[
+				"name",
+				"customer",
+				"grand_total",
+				"outstanding_amount",
+				"custom_xero_invoice_number",
+				"company",
+			],
 			ignore_permissions=True,
 		)
 
@@ -56,10 +63,12 @@ def sync_invoice_payments():
 				# A9 fix: check payment_result before appending to processed list
 				payment_result = create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid)
 				if payment_result and payment_result.get("status") == "success":
-					processed_invoices.append({
-						"invoice": erpnext_invoice.name,
-						"amount_paid": amount_paid,
-					})
+					processed_invoices.append(
+						{
+							"invoice": erpnext_invoice.name,
+							"amount_paid": amount_paid,
+						}
+					)
 
 		return {
 			"status": "success",
@@ -223,11 +232,14 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 					"message": f"No receivable account found for company {sales_invoice.company}",
 				}
 
-		payment_entry.append("references", {
-			"reference_doctype": "Sales Invoice",
-			"reference_name": sales_invoice.name,
-			"allocated_amount": remaining_amount,
-		})
+		payment_entry.append(
+			"references",
+			{
+				"reference_doctype": "Sales Invoice",
+				"reference_name": sales_invoice.name,
+				"allocated_amount": remaining_amount,
+			},
+		)
 
 		# B4 fix: ignore_permissions — called from scheduler context
 		payment_entry.insert(ignore_permissions=True)
@@ -240,7 +252,9 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		}
 
 	except Exception as e:
-		frappe.log_error(title="Xero Payment Entry Creation", message=f"Error creating payment entry: {str(e)}")
+		frappe.log_error(
+			title="Xero Payment Entry Creation", message=f"Error creating payment entry: {str(e)}"
+		)
 		return {"status": "error", "message": str(e)}
 
 
@@ -417,7 +431,9 @@ def create_contact_and_map(contact_person: str, sales_invoice: str) -> dict:
 			"IsCustomer": is_customer,
 			"IsSupplier": is_supplier,
 			"Addresses": [{"AddressType": "STREET", "AddressLine1": contact_doc.address or ""}],
-			"Phones": [{"PhoneType": "DEFAULT", "PhoneNumber": contact_doc.phone or contact_doc.mobile_no or ""}],
+			"Phones": [
+				{"PhoneType": "DEFAULT", "PhoneNumber": contact_doc.phone or contact_doc.mobile_no or ""}
+			],
 		}
 
 		data = {"Contacts": [contact_data]}
@@ -436,7 +452,9 @@ def create_contact_and_map(contact_person: str, sales_invoice: str) -> dict:
 		return {"status": "error", "message": "Failed to create contact in Xero"}
 
 	except Exception as e:
-		frappe.log_error(title="Create Contact and Map", message=f"Failed to create and map contact: {str(e)}")
+		frappe.log_error(
+			title="Create Contact and Map", message=f"Failed to create and map contact: {str(e)}"
+		)
 		return {"status": "error", "message": str(e)}
 
 

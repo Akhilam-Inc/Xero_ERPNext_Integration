@@ -88,7 +88,9 @@ def get_account_code(account_name: str) -> str | None:
 			return custom_code
 		return frappe.db.get_single_value("Xero Settings", "default_account_code") or None
 	except Exception as e:
-		frappe.log_error(title="Get Account Code", message=f"Error getting account code for {account_name}: {str(e)}")
+		frappe.log_error(
+			title="Get Account Code", message=f"Error getting account code for {account_name}: {str(e)}"
+		)
 		return None
 
 
@@ -112,7 +114,7 @@ def get_customer_contact_id(customer: str) -> str | None:
 	except Exception as e:
 		frappe.log_error(
 			title="Get Customer Contact ID",
-			message=f"Error getting contact id for customer {customer}: {str(e)}"
+			message=f"Error getting contact id for customer {customer}: {str(e)}",
 		)
 		return None
 

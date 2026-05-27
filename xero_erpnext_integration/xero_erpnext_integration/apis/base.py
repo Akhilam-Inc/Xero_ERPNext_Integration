@@ -2,7 +2,7 @@ import base64
 import json
 from datetime import datetime, timedelta
 from enum import Enum
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urlencode, urljoin
 
 import frappe
 import requests
@@ -266,9 +266,7 @@ class XeroAPIClient:
 				"client_secret": self.client_secret,
 			}
 
-			headers = {
-				"Content-Type": "application/x-www-form-urlencoded"
-			}
+			headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
 			response = requests.post(self.token_url, data=refresh_payload, headers=headers)
 

@@ -15,8 +15,8 @@ XERO_CLIENT_PATH = (
 # sync_voided_invoices
 # ---------------------------------------------------------------------------
 
-class TestSyncVoidedInvoices(FrappeTestCase):
 
+class TestSyncVoidedInvoices(FrappeTestCase):
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_early_when_no_response(self, mock_factory):
 		mock_client = MagicMock()
@@ -26,6 +26,7 @@ class TestSyncVoidedInvoices(FrappeTestCase):
 		from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 			sync_voided_invoices,
 		)
+
 		# Should not raise
 		sync_voided_invoices()
 
@@ -46,6 +47,7 @@ class TestSyncVoidedInvoices(FrappeTestCase):
 			from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 				sync_voided_invoices,
 			)
+
 			sync_voided_invoices()
 
 		self.assertEqual(mock_process.call_count, 2)
@@ -62,6 +64,7 @@ class TestSyncVoidedInvoices(FrappeTestCase):
 			from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 				sync_voided_invoices,
 			)
+
 			sync_voided_invoices()
 
 		mock_process.assert_not_called()
@@ -71,13 +74,14 @@ class TestSyncVoidedInvoices(FrappeTestCase):
 # process_voided_invoice
 # ---------------------------------------------------------------------------
 
-class TestProcessVoidedInvoice(FrappeTestCase):
 
+class TestProcessVoidedInvoice(FrappeTestCase):
 	def test_skips_when_no_matching_erpnext_invoice(self):
 		with patch("frappe.get_all", return_value=[]):
 			from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 				process_voided_invoice,
 			)
+
 			# Should not raise
 			process_voided_invoice({"InvoiceID": "unknown-id", "InvoiceNumber": "INV-X"})
 
@@ -89,6 +93,7 @@ class TestProcessVoidedInvoice(FrappeTestCase):
 				from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 					process_voided_invoice,
 				)
+
 				process_voided_invoice({"InvoiceID": "xero-id", "InvoiceNumber": "INV-001"})
 
 		mock_cancel.assert_not_called()
@@ -101,6 +106,7 @@ class TestProcessVoidedInvoice(FrappeTestCase):
 				from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 					process_voided_invoice,
 				)
+
 				process_voided_invoice({"InvoiceID": "xero-id", "InvoiceNumber": "INV-002"})
 
 		mock_cancel.assert_not_called()
@@ -113,6 +119,7 @@ class TestProcessVoidedInvoice(FrappeTestCase):
 				from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 					process_voided_invoice,
 				)
+
 				process_voided_invoice({"InvoiceID": "xero-id", "InvoiceNumber": "INV-003"})
 
 		mock_cancel.assert_called_once()
@@ -122,8 +129,8 @@ class TestProcessVoidedInvoice(FrappeTestCase):
 # cancel_invoice_in_erpnext
 # ---------------------------------------------------------------------------
 
-class TestCancelInvoiceInErpnext(FrappeTestCase):
 
+class TestCancelInvoiceInErpnext(FrappeTestCase):
 	def test_cancels_and_adds_comment(self):
 		mock_doc = MagicMock()
 		mock_doc.name = "SINV-004"
@@ -132,9 +139,8 @@ class TestCancelInvoiceInErpnext(FrappeTestCase):
 			from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 				cancel_invoice_in_erpnext,
 			)
-			cancel_invoice_in_erpnext(
-				{"name": "SINV-004"}, "xero-uuid", "INV-004"
-			)
+
+			cancel_invoice_in_erpnext({"name": "SINV-004"}, "xero-uuid", "INV-004")
 
 		mock_doc.cancel.assert_called_once()
 		mock_doc.add_comment.assert_called_once()

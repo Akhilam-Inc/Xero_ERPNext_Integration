@@ -6,13 +6,10 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-XERO_CLIENT_PATH = (
-	"xero_erpnext_integration.xero_erpnext_integration.apis.connection.get_xero_client"
-)
+XERO_CLIENT_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.connection.get_xero_client"
 
 
 class TestAuthorize(FrappeTestCase):
-
 	def test_returns_error_when_code_missing(self):
 		mock_settings = MagicMock()
 		mock_settings.code = None
@@ -21,6 +18,7 @@ class TestAuthorize(FrappeTestCase):
 
 		with patch("frappe.get_single", return_value=mock_settings):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.connection import authorize
+
 			result = authorize()
 
 		self.assertEqual(result["status"], "error")
@@ -34,6 +32,7 @@ class TestAuthorize(FrappeTestCase):
 
 		with patch("frappe.get_single", return_value=mock_settings):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.connection import authorize
+
 			result = authorize()
 
 		self.assertEqual(result["status"], "error")
@@ -57,6 +56,7 @@ class TestAuthorize(FrappeTestCase):
 
 		with patch("frappe.get_single", return_value=mock_settings):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.connection import authorize
+
 			result = authorize()
 
 		self.assertEqual(result["status"], "success")
@@ -70,12 +70,12 @@ class TestAuthorize(FrappeTestCase):
 
 		mock_factory.return_value = MagicMock()
 
-		with patch("frappe.get_single", return_value=mock_settings), \
-			 patch(XERO_CLIENT_PATH) as mock_factory2:
+		with patch("frappe.get_single", return_value=mock_settings), patch(XERO_CLIENT_PATH) as mock_factory2:
 			mock_factory2.return_value = MagicMock()
 			mock_factory2.return_value.exchange_code_for_token.side_effect = Exception("invalid_grant")
 
 			from xero_erpnext_integration.xero_erpnext_integration.apis.connection import authorize
+
 			result = authorize()
 
 		self.assertEqual(result["status"], "error")

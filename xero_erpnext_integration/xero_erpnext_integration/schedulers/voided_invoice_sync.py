@@ -26,7 +26,9 @@ def sync_voided_invoices():
 		voided_invoices = response["Invoices"]
 
 		# C1 fix: informational messages belong in logger, not Error Log
-		frappe.logger().info(f"Voided Invoice Sync: found {len(voided_invoices)} voided invoices in Xero for today")
+		frappe.logger().info(
+			f"Voided Invoice Sync: found {len(voided_invoices)} voided invoices in Xero for today"
+		)
 
 		for xero_invoice in voided_invoices:
 			process_voided_invoice(xero_invoice)
@@ -108,7 +110,9 @@ def cancel_invoice_in_erpnext(sales_invoice, xero_invoice_id, xero_invoice_numbe
 		sales_invoice_doc.add_comment("Comment", comment_text)
 
 		# C1 fix: use logger for success messages — not Error Log
-		frappe.logger().info(f"Voided Invoice Sync: cancelled invoice {sales_invoice['name']} due to VOID in Xero")
+		frappe.logger().info(
+			f"Voided Invoice Sync: cancelled invoice {sales_invoice['name']} due to VOID in Xero"
+		)
 
 	except Exception as e:
 		frappe.log_error(

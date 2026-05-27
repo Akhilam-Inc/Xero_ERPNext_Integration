@@ -52,7 +52,10 @@ def create_payment_from_xero(xero_invoice_id: str, payment_amount: float) -> dic
 
 	except Exception as e:
 		# A3 fix: use frappe.log_error (creates DB Error Log record) not frappe.logger().error
-		frappe.log_error(title="Xero Payment from Xero", message=f"Failed to create payment for Xero invoice {xero_invoice_id}: {str(e)}")
+		frappe.log_error(
+			title="Xero Payment from Xero",
+			message=f"Failed to create payment for Xero invoice {xero_invoice_id}: {str(e)}",
+		)
 		return {"status": "error", "message": str(e)}
 
 

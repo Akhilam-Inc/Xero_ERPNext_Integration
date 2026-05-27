@@ -7,7 +7,9 @@ import frappe
 from frappe import _
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET", "POST"])  # nosemgrep — Xero sends webhook POSTs without session auth; guest access is required by design
+@frappe.whitelist(
+	allow_guest=True, methods=["GET", "POST"]
+)  # nosemgrep — Xero sends webhook POSTs without session auth; guest access is required by design
 def webhook():
 	"""Main Xero webhook endpoint"""
 	try:
@@ -94,7 +96,9 @@ def process_webhook_event(event):
 			update_invoice_from_xero(resource_id)
 
 	except Exception as e:
-		frappe.log_error(title="Xero Webhook Event Processing", message=f"Error processing webhook event: {str(e)}")
+		frappe.log_error(
+			title="Xero Webhook Event Processing", message=f"Error processing webhook event: {str(e)}"
+		)
 
 
 def update_invoice_from_xero(invoice_id):
@@ -123,7 +127,9 @@ def update_invoice_from_xero(invoice_id):
 		)
 
 		if not sales_invoice_list:
-			frappe.log_error(title="Xero Webhook", message=f"No ERPNext invoice found for Xero invoice {invoice_id}")
+			frappe.log_error(
+				title="Xero Webhook", message=f"No ERPNext invoice found for Xero invoice {invoice_id}"
+			)
 			return
 
 		sales_invoice = sales_invoice_list[0]
@@ -136,7 +142,9 @@ def update_invoice_from_xero(invoice_id):
 		frappe.logger().info(f"Xero Webhook: processed {status} invoice {invoice_id}")
 
 	except Exception as e:
-		frappe.log_error(title="Xero Webhook", message=f"Error updating invoice {invoice_id} from Xero: {str(e)}")
+		frappe.log_error(
+			title="Xero Webhook", message=f"Error updating invoice {invoice_id} from Xero: {str(e)}"
+		)
 
 
 def handle_paid_invoice(sales_invoice, xero_invoice, amount_paid):

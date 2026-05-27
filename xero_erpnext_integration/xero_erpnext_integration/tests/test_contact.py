@@ -6,22 +6,18 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-XERO_CLIENT_PATH = (
-	"xero_erpnext_integration.xero_erpnext_integration.apis.contact.get_xero_client"
-)
+XERO_CLIENT_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.contact.get_xero_client"
 
 
 class TestGetXeroContacts(FrappeTestCase):
-
 	@patch(XERO_CLIENT_PATH)
 	def test_returns_contacts_list_on_success(self, mock_factory):
 		mock_client = MagicMock()
-		mock_client.make_request.return_value = {
-			"Contacts": [{"ContactID": "c1", "Name": "Test Corp"}]
-		}
+		mock_client.make_request.return_value = {"Contacts": [{"ContactID": "c1", "Name": "Test Corp"}]}
 		mock_factory.return_value = mock_client
 
 		from xero_erpnext_integration.xero_erpnext_integration.apis.contact import get_xero_contacts
+
 		result = get_xero_contacts()
 		self.assertEqual(result["status"], "success")
 		self.assertEqual(len(result["data"]), 1)
@@ -31,38 +27,41 @@ class TestGetXeroContacts(FrappeTestCase):
 		mock_factory.side_effect = Exception("API unavailable")
 
 		from xero_erpnext_integration.xero_erpnext_integration.apis.contact import get_xero_contacts
+
 		result = get_xero_contacts()
 		self.assertEqual(result["status"], "error")
 
 
 class TestCreateContact(FrappeTestCase):
-
 	def setUp(self):
 		# Customer contact
-		self.customer = frappe.get_doc({
-			"doctype": "Customer",
-			"customer_name": "_XeroTest ContactCreate",
-			"customer_type": "Individual",
-			"customer_group": "All Customer Groups",
-			"territory": "All Territories",
-		}).insert(ignore_permissions=True)
+		self.customer = frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": "_XeroTest ContactCreate",
+				"customer_type": "Individual",
+				"customer_group": "All Customer Groups",
+				"territory": "All Territories",
+			}
+		).insert(ignore_permissions=True)
 
-		self.contact = frappe.get_doc({
-			"doctype": "Contact",
-			"first_name": "_XeroTest",
-			"last_name": "ContactCreate",
-			"links": [{"link_doctype": "Customer", "link_name": self.customer.name}],
-		}).insert(ignore_permissions=True)
+		self.contact = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": "_XeroTest",
+				"last_name": "ContactCreate",
+				"links": [{"link_doctype": "Customer", "link_name": self.customer.name}],
+			}
+		).insert(ignore_permissions=True)
 
 	@patch(XERO_CLIENT_PATH)
 	def test_creates_contact_with_customer_flag(self, mock_factory):
 		mock_client = MagicMock()
-		mock_client.make_request.return_value = {
-			"Contacts": [{"ContactID": "new-xero-id"}]
-		}
+		mock_client.make_request.return_value = {"Contacts": [{"ContactID": "new-xero-id"}]}
 		mock_factory.return_value = mock_client
 
 		from xero_erpnext_integration.xero_erpnext_integration.apis.contact import create_contact
+
 		result = create_contact(self.contact.name)
 
 		self.assertEqual(result["status"], "success")
@@ -75,5 +74,6 @@ class TestCreateContact(FrappeTestCase):
 		mock_factory.side_effect = Exception("Xero down")
 
 		from xero_erpnext_integration.xero_erpnext_integration.apis.contact import create_contact
+
 		result = create_contact(self.contact.name)
 		self.assertIsNone(result)
