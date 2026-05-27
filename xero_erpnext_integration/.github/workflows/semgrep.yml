@@ -5,6 +5,7 @@ on:
     branches: [version-16, main]
   push:
     branches: [version-16]
+  workflow_dispatch:  # allows manual trigger from Actions tab
 
 jobs:
   semgrep:
