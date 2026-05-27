@@ -35,7 +35,9 @@ frappe.listview_settings["Account"] = {
 								.slice(0, 20)
 								.map(
 									(x) =>
-										`${frappe.utils.escape_html(x.name)} → ${frappe.utils.escape_html(x.tax_type || "")}`
+										`${frappe.utils.escape_html(
+											x.name
+										)} → ${frappe.utils.escape_html(x.tax_type || "")}`
 								)
 								.join("<br>");
 						if (created.length > 20) msg += "<br>...";
@@ -50,7 +52,9 @@ frappe.listview_settings["Account"] = {
 								.slice(0, 20)
 								.map(
 									(x) =>
-										`${frappe.utils.escape_html(x.name)}: ${frappe.utils.escape_html(x.reason)}`
+										`${frappe.utils.escape_html(
+											x.name
+										)}: ${frappe.utils.escape_html(x.reason)}`
 								)
 								.join("<br>");
 						if (skipped.length > 20) msg += "<br>...";
@@ -65,7 +69,9 @@ frappe.listview_settings["Account"] = {
 								.slice(0, 20)
 								.map(
 									(x) =>
-										`${frappe.utils.escape_html(x.name)}: ${frappe.utils.escape_html(x.error)}`
+										`${frappe.utils.escape_html(
+											x.name
+										)}: ${frappe.utils.escape_html(x.error)}`
 								)
 								.join("<br>");
 						if (failed.length > 20) msg += "<br>...";
@@ -161,10 +167,12 @@ function render_pull_result(res) {
 	const skipped = res.skipped || [];
 	const failed = res.failed || [];
 
-	let msg = __(
-		"Pull complete. Created: {0}, Mapped: {1}, Skipped: {2}, Failed: {3}",
-		[created.length, mapped.length, skipped.length, failed.length]
-	);
+	let msg = __("Pull complete. Created: {0}, Mapped: {1}, Skipped: {2}, Failed: {3}", [
+		created.length,
+		mapped.length,
+		skipped.length,
+		failed.length,
+	]);
 	if (res.parent_account) {
 		msg += `<br><br><em>${__("New accounts placed under")}: ${frappe.utils.escape_html(
 			res.parent_account
@@ -181,17 +189,37 @@ function render_pull_result(res) {
 		return `<br><br><strong>${title}</strong><br>${items}${more}`;
 	};
 
-	msg += section(__("Created"), created, (x) =>
-		`${frappe.utils.escape_html(x.account)} ← ${frappe.utils.escape_html(x.xero_name || "")} (${frappe.utils.escape_html(x.tax_type || "")})`
+	msg += section(
+		__("Created"),
+		created,
+		(x) =>
+			`${frappe.utils.escape_html(x.account)} ← ${frappe.utils.escape_html(
+				x.xero_name || ""
+			)} (${frappe.utils.escape_html(x.tax_type || "")})`
 	);
-	msg += section(__("Mapped"), mapped, (x) =>
-		`${frappe.utils.escape_html(x.account)} → ${frappe.utils.escape_html(x.tax_type || "")}`
+	msg += section(
+		__("Mapped"),
+		mapped,
+		(x) =>
+			`${frappe.utils.escape_html(x.account)} → ${frappe.utils.escape_html(
+				x.tax_type || ""
+			)}`
 	);
-	msg += section(__("Skipped"), skipped, (x) =>
-		`${frappe.utils.escape_html(x.xero_name || x.account || "")}: ${frappe.utils.escape_html(x.reason || "")}`
+	msg += section(
+		__("Skipped"),
+		skipped,
+		(x) =>
+			`${frappe.utils.escape_html(
+				x.xero_name || x.account || ""
+			)}: ${frappe.utils.escape_html(x.reason || "")}`
 	);
-	msg += section(__("Failed"), failed, (x) =>
-		`${frappe.utils.escape_html(x.xero_name || x.account || "")}: ${frappe.utils.escape_html(x.error || "")}`
+	msg += section(
+		__("Failed"),
+		failed,
+		(x) =>
+			`${frappe.utils.escape_html(
+				x.xero_name || x.account || ""
+			)}: ${frappe.utils.escape_html(x.error || "")}`
 	);
 
 	frappe.msgprint({

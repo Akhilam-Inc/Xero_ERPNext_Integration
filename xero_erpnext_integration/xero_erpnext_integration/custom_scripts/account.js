@@ -14,11 +14,7 @@ frappe.ui.form.on("Account", {
 		}
 
 		// Manual sync button: only when sync is enabled and not yet mapped.
-		if (
-			!frm.is_new() &&
-			frm.doc.custom_send_to_xero &&
-			!frm.doc.custom_xero_tax_type
-		) {
+		if (!frm.is_new() && frm.doc.custom_send_to_xero && !frm.doc.custom_xero_tax_type) {
 			frm.add_custom_button(
 				__("Send to Xero"),
 				function () {

@@ -21,9 +21,7 @@ def _as_xero_date_string(d) -> str | None:
 def _xero_where_updated_since(hours: int) -> str:
 	# Xero query format: UpdatedDateUTC>=DateTime(2026,05,08,10,00,00)
 	dt = datetime.now(timezone.utc) - timedelta(hours=hours)
-	return (
-		f"UpdatedDateUTC>=DateTime({dt.year},{dt.month:02d},{dt.day:02d},{dt.hour:02d},{dt.minute:02d},{dt.second:02d})"
-	)
+	return f"UpdatedDateUTC>=DateTime({dt.year},{dt.month:02d},{dt.day:02d},{dt.hour:02d},{dt.minute:02d},{dt.second:02d})"
 
 
 @frappe.whitelist()
@@ -87,16 +85,16 @@ def create_credit_note(sales_return: str, update: bool = False):
 	data = {"CreditNotes": [credit_note_data]}
 
 	if update and getattr(sr, "custom_xero_credit_note_id", None):
-		response = client.make_request(
-			"POST", f"/CreditNotes/{sr.custom_xero_credit_note_id}", data=data
-		)
+		response = client.make_request("POST", f"/CreditNotes/{sr.custom_xero_credit_note_id}", data=data)
 	else:
 		response = client.make_request("POST", "/CreditNotes", data=data)
 
 	if response and response.get("CreditNotes"):
 		cn = response["CreditNotes"][0]
 		frappe.db.set_value("Sales Invoice", sr.name, "custom_xero_credit_note_id", cn.get("CreditNoteID"))
-		frappe.db.set_value("Sales Invoice", sr.name, "custom_xero_credit_note_number", cn.get("CreditNoteNumber"))
+		frappe.db.set_value(
+			"Sales Invoice", sr.name, "custom_xero_credit_note_number", cn.get("CreditNoteNumber")
+		)
 		frappe.db.set_value("Sales Invoice", sr.name, "custom_xero_credit_note_status", cn.get("Status"))
 		return {"status": "success", "data": cn}
 
@@ -126,7 +124,9 @@ def push_pending_sales_returns(limit: int = 50):
 			if res and res.get("status") == "success":
 				out["created"].append(row.name)
 			else:
-				out["failed"].append({"name": row.name, "error": (res or {}).get("message") or "Unknown error"})
+				out["failed"].append(
+					{"name": row.name, "error": (res or {}).get("message") or "Unknown error"}
+				)
 		except Exception as e:
 			out["failed"].append({"name": row.name, "error": str(e)})
 
@@ -179,9 +179,7 @@ def sync_selected_sales_returns(invoices):
 				continue
 
 			cn = res.get("data") or {}
-			results["created"].append(
-				{"name": sr.name, "xero_credit_note_id": cn.get("CreditNoteID")}
-			)
+			results["created"].append({"name": sr.name, "xero_credit_note_id": cn.get("CreditNoteID")})
 
 		except Exception as e:
 			results["failed"].append({"name": name, "error": str(e)})
@@ -229,7 +227,9 @@ def pull_updated_credit_notes(hours: int = 2, limit: int = 100):
 			# already imported?
 			existing = frappe.db.get_value("Sales Invoice", {"custom_xero_credit_note_id": cn_id}, "name")
 			if existing:
-				out["skipped"].append({"xero_credit_note_id": cn_id, "reason": "Already imported", "sales_return": existing})
+				out["skipped"].append(
+					{"xero_credit_note_id": cn_id, "reason": "Already imported", "sales_return": existing}
+				)
 				continue
 
 			xero_invoice_id = _get_allocation_invoice_id(cn)
@@ -293,14 +293,20 @@ def _create_sales_return_from_invoice(invoice_name: str, credit_note: dict) -> s
 	return_doc.insert(ignore_permissions=True)
 
 	# Store linkage from Xero CN
-	frappe.db.set_value("Sales Invoice", return_doc.name, "custom_xero_credit_note_id", credit_note.get("CreditNoteID"))
 	frappe.db.set_value(
-		"Sales Invoice", return_doc.name, "custom_xero_credit_note_number", credit_note.get("CreditNoteNumber")
+		"Sales Invoice", return_doc.name, "custom_xero_credit_note_id", credit_note.get("CreditNoteID")
 	)
-	frappe.db.set_value("Sales Invoice", return_doc.name, "custom_xero_credit_note_status", credit_note.get("Status"))
+	frappe.db.set_value(
+		"Sales Invoice",
+		return_doc.name,
+		"custom_xero_credit_note_number",
+		credit_note.get("CreditNoteNumber"),
+	)
+	frappe.db.set_value(
+		"Sales Invoice", return_doc.name, "custom_xero_credit_note_status", credit_note.get("Status")
+	)
 
 	if mapped_any:
 		return_doc.submit(ignore_permissions=True)
 
 	return return_doc.name
-

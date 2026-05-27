@@ -21,10 +21,11 @@ frappe.listview_settings["Sales Invoice"] = {
 					const skipped = res.skipped || [];
 					const failed = res.failed || [];
 
-					let msg = __(
-						"Xero sync complete. Created: {0}, Skipped: {1}, Failed: {2}",
-						[created.length, skipped.length, failed.length]
-					);
+					let msg = __("Xero sync complete. Created: {0}, Skipped: {1}, Failed: {2}", [
+						created.length,
+						skipped.length,
+						failed.length,
+					]);
 
 					if (skipped.length) {
 						msg +=
@@ -35,7 +36,9 @@ frappe.listview_settings["Sales Invoice"] = {
 								.slice(0, 20)
 								.map(
 									(x) =>
-										`${frappe.utils.escape_html(x.name)}: ${frappe.utils.escape_html(x.reason)}`
+										`${frappe.utils.escape_html(
+											x.name
+										)}: ${frappe.utils.escape_html(x.reason)}`
 								)
 								.join("<br>");
 						if (skipped.length > 20) msg += "<br>...";
@@ -50,7 +53,9 @@ frappe.listview_settings["Sales Invoice"] = {
 								.slice(0, 20)
 								.map(
 									(x) =>
-										`${frappe.utils.escape_html(x.name)}: ${frappe.utils.escape_html(x.error)}`
+										`${frappe.utils.escape_html(
+											x.name
+										)}: ${frappe.utils.escape_html(x.error)}`
 								)
 								.join("<br>");
 						if (failed.length > 20) msg += "<br>...";
@@ -105,7 +110,9 @@ frappe.listview_settings["Sales Invoice"] = {
 								.slice(0, 20)
 								.map(
 									(x) =>
-										`${frappe.utils.escape_html(x.name)}: ${frappe.utils.escape_html(x.reason)}`
+										`${frappe.utils.escape_html(
+											x.name
+										)}: ${frappe.utils.escape_html(x.reason)}`
 								)
 								.join("<br>");
 						if (skipped.length > 20) msg += "<br>...";
@@ -120,7 +127,9 @@ frappe.listview_settings["Sales Invoice"] = {
 								.slice(0, 20)
 								.map(
 									(x) =>
-										`${frappe.utils.escape_html(x.name)}: ${frappe.utils.escape_html(x.error)}`
+										`${frappe.utils.escape_html(
+											x.name
+										)}: ${frappe.utils.escape_html(x.error)}`
 								)
 								.join("<br>");
 						if (failed.length > 20) msg += "<br>...";
@@ -141,4 +150,3 @@ frappe.listview_settings["Sales Invoice"] = {
 		);
 	},
 };
-

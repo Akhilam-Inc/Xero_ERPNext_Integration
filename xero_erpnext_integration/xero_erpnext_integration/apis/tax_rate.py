@@ -16,7 +16,6 @@ from frappe.utils import flt
 
 from .base import get_xero_client
 
-
 # Xero ReportTaxType values we use by default. Users with non-standard regional
 # requirements can pre-populate `custom_xero_report_tax_type` on the account.
 DEFAULT_SALES_REPORT_TAX_TYPE = "OUTPUT"
@@ -74,9 +73,7 @@ def _build_tax_rate_payload(account) -> dict:
 
 def _validate_tax_account(account):
 	if (account.account_type or "") != "Tax":
-		frappe.throw(
-			_("Account {0} is not a Tax account (account_type must be 'Tax')").format(account.name)
-		)
+		frappe.throw(_("Account {0} is not a Tax account (account_type must be 'Tax')").format(account.name))
 	if flt(account.tax_rate) <= 0:
 		frappe.throw(
 			_("Account {0} has no tax_rate. Set a non-zero tax_rate before syncing to Xero.").format(
@@ -134,9 +131,7 @@ def create_tax_rate(account_name: str, update: bool = False) -> dict:
 	# Stamp Xero linkage back onto the ERPNext Account so subsequent invoice syncs
 	# can resolve the TaxType from `Account.custom_xero_tax_type`.
 	frappe.db.set_value("Account", account.name, "custom_xero_tax_type", tax_type)
-	if xero_tax.get("ReportTaxType") and frappe.db.has_column(
-		"Account", "custom_xero_report_tax_type"
-	):
+	if xero_tax.get("ReportTaxType") and frappe.db.has_column("Account", "custom_xero_report_tax_type"):
 		frappe.db.set_value(
 			"Account",
 			account.name,
@@ -148,9 +143,9 @@ def create_tax_rate(account_name: str, update: bool = False) -> dict:
 
 	return {
 		"status": "success",
-		"message": _(
-			"Tax Rate synced to Xero. Saved Xero TaxType '{0}' on Account '{1}'."
-		).format(tax_type, account.name),
+		"message": _("Tax Rate synced to Xero. Saved Xero TaxType '{0}' on Account '{1}'.").format(
+			tax_type, account.name
+		),
 		"data": xero_tax,
 		"account": account.name,
 		"tax_type": tax_type,
@@ -194,9 +189,7 @@ def sync_selected_tax_rates(accounts) -> dict:
 				# Also flip the checkbox so the form reflects the synced state
 				if not account.get("custom_send_to_xero"):
 					frappe.db.set_value("Account", name, "custom_send_to_xero", 1)
-				results["created"].append(
-					{"name": name, "tax_type": (res.get("data") or {}).get("TaxType")}
-				)
+				results["created"].append({"name": name, "tax_type": (res.get("data") or {}).get("TaxType")})
 			else:
 				results["failed"].append({"name": name, "error": (res or {}).get("message") or "Unknown"})
 		except Exception as e:
@@ -254,9 +247,7 @@ def _xero_effective_rate(rate: dict) -> float:
 	return float(sum(flt(c.get("Rate")) for c in components if not c.get("IsCompound")))
 
 
-def _create_tax_account_from_xero(
-	rate: dict, company: str, parent_account: str
-) -> str | None:
+def _create_tax_account_from_xero(rate: dict, company: str, parent_account: str) -> str | None:
 	"""Create an ERPNext Tax Account from a Xero TaxRate. Returns the new account name."""
 	xero_name = (rate.get("Name") or "").strip()
 	if not xero_name:
@@ -318,9 +309,8 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 		if len(companies) == 1:
 			company = companies[0]
 		else:
-			company = (
-				frappe.defaults.get_user_default("Company")
-				or frappe.defaults.get_global_default("company")
+			company = frappe.defaults.get_user_default("Company") or frappe.defaults.get_global_default(
+				"company"
 			)
 	if not company:
 		frappe.throw(_("Could not resolve a default Company. Pass `company` explicitly."))
@@ -359,20 +349,18 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 		xero_name_raw = (r.get("Name") or "").strip()
 		xero_name = xero_name_raw.lower()
 		if not tax_type or not xero_name_raw:
-			skipped.append(
-				{"xero_name": xero_name_raw, "reason": "Missing TaxType or Name in Xero payload"}
-			)
+			skipped.append({"xero_name": xero_name_raw, "reason": "Missing TaxType or Name in Xero payload"})
 			continue
 
 		match = by_name.get(xero_name)
 		if match:
 			if match.custom_xero_tax_type == tax_type:
-				skipped.append({"xero_name": xero_name_raw, "reason": "Already mapped", "account": match.name})
+				skipped.append(
+					{"xero_name": xero_name_raw, "reason": "Already mapped", "account": match.name}
+				)
 				continue
 			frappe.db.set_value("Account", match.name, "custom_xero_tax_type", tax_type)
-			if r.get("ReportTaxType") and frappe.db.has_column(
-				"Account", "custom_xero_report_tax_type"
-			):
+			if r.get("ReportTaxType") and frappe.db.has_column("Account", "custom_xero_report_tax_type"):
 				frappe.db.set_value(
 					"Account", match.name, "custom_xero_report_tax_type", r.get("ReportTaxType")
 				)

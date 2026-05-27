@@ -226,4 +226,3 @@ function authorize(frm) {
 		indicator: "blue",
 	});
 }
-

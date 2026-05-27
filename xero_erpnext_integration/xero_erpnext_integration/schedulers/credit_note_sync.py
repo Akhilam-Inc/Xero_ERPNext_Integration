@@ -21,4 +21,3 @@ def pull_credit_notes():
 	except Exception as e:
 		frappe.log_error(title="Xero Credit Note Pull Scheduler", message=str(e))
 		raise
-

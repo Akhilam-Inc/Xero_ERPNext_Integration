@@ -8,7 +8,6 @@ from frappe.utils import cint, flt
 from .base import get_xero_client
 from .item import ensure_xero_items_for_lines, resolve_line_item_code
 
-
 # ---------------------------------------------------------------------------
 # Line item helpers (shared by Sales Invoice and Credit Note line construction)
 # ---------------------------------------------------------------------------
@@ -62,7 +61,11 @@ def get_line_amount_types(invoice):
 		return "NoTax"
 
 	for tax in taxes:
-		incl = tax.get("included_in_print_rate") if hasattr(tax, "get") else getattr(tax, "included_in_print_rate", 0)
+		incl = (
+			tax.get("included_in_print_rate")
+			if hasattr(tax, "get")
+			else getattr(tax, "included_in_print_rate", 0)
+		)
 		if cint(incl):
 			return "Inclusive"
 	return "Exclusive"

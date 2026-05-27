@@ -156,7 +156,9 @@ def ensure_xero_items_for_lines(lines, client=None) -> dict[str, str]:
 
 def resolve_line_item_code(item_row, item_code_map: dict[str, str] | None = None) -> str | None:
 	"""Pick the Xero ItemCode for an invoice line (after ensure_xero_items_for_lines)."""
-	item_code = item_row.get("item_code") if hasattr(item_row, "get") else getattr(item_row, "item_code", None)
+	item_code = (
+		item_row.get("item_code") if hasattr(item_row, "get") else getattr(item_row, "item_code", None)
+	)
 	if not item_code:
 		return None
 
