@@ -8,7 +8,7 @@ def push_sales_returns():
 	try:
 		return push_pending_sales_returns()
 	except Exception as e:
-		frappe.log_error("Xero Credit Note Push Scheduler", str(e))
+		frappe.log_error(title="Xero Credit Note Push Scheduler", message=str(e))
 		raise
 
 
@@ -19,6 +19,6 @@ def pull_credit_notes():
 	try:
 		return pull_updated_credit_notes()
 	except Exception as e:
-		frappe.log_error("Xero Credit Note Pull Scheduler", str(e))
+		frappe.log_error(title="Xero Credit Note Pull Scheduler", message=str(e))
 		raise
 

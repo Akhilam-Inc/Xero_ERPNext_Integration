@@ -236,13 +236,13 @@ def _find_tax_parent_account(company: str) -> str | None:
 	# 3. Any non-root group account under Liability
 	parent = frappe.db.get_value(
 		"Account",
-		{
-			"company": company,
-			"is_group": 1,
-			"root_type": "Liability",
-			"disabled": 0,
-			"parent_account": ["is", "set"],
-		},
+		[
+			["company", "=", company],
+			["is_group", "=", 1],
+			["root_type", "=", "Liability"],
+			["disabled", "=", 0],
+			["parent_account", "is", "set"],
+		],
 		"name",
 		order_by="lft asc",
 	)

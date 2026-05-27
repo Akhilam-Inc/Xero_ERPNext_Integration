@@ -31,7 +31,8 @@ def _item_exists_in_xero(client, code: str) -> dict | None:
 	where = f'Code=="{safe}"'
 	try:
 		response = client.make_request("GET", "/Items", params={"where": where}) or {}
-	except Exception:
+	except Exception as e:
+		frappe.log_error(title="Xero Item Lookup", message=f"Failed to check item {code!r} in Xero: {e!s}")
 		return None
 
 	for row in response.get("Items") or []:

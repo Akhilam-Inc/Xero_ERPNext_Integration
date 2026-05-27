@@ -109,12 +109,12 @@ def push_pending_sales_returns(limit: int = 50):
 	limit = int(limit or 50)
 	to_sync = frappe.get_all(
 		"Sales Invoice",
-		filters={
-			"docstatus": 1,
-			"is_return": 1,
-			"custom_do_not_sync_to_xero": 0,
-			"custom_xero_credit_note_id": ["is", "not set"],
-		},
+		filters=[
+			["docstatus", "=", 1],
+			["is_return", "=", 1],
+			["custom_do_not_sync_to_xero", "=", 0],
+			["custom_xero_credit_note_id", "is", "not set"],
+		],
 		fields=["name"],
 		limit=limit,
 	)
@@ -131,7 +131,7 @@ def push_pending_sales_returns(limit: int = 50):
 			out["failed"].append({"name": row.name, "error": str(e)})
 
 	if out["failed"]:
-		frappe.log_error("Xero Credit Note Push", frappe.as_json(out))
+		frappe.log_error(title="Xero Credit Note Push", message=frappe.as_json(out))
 	return out
 
 
@@ -246,7 +246,7 @@ def pull_updated_credit_notes(hours: int = 2, limit: int = 100):
 			out["failed"].append({"xero_credit_note_id": cn.get("CreditNoteID"), "error": str(e)})
 
 	if out["failed"]:
-		frappe.log_error("Xero Credit Note Pull", frappe.as_json(out))
+		frappe.log_error(title="Xero Credit Note Pull", message=frappe.as_json(out))
 	return out
 
 
@@ -290,7 +290,7 @@ def _create_sales_return_from_invoice(invoice_name: str, credit_note: dict) -> s
 
 	return_doc.is_return = 1
 	return_doc.return_against = si.name
-	return_doc.insert()
+	return_doc.insert(ignore_permissions=True)
 
 	# Store linkage from Xero CN
 	frappe.db.set_value("Sales Invoice", return_doc.name, "custom_xero_credit_note_id", credit_note.get("CreditNoteID"))
@@ -300,7 +300,7 @@ def _create_sales_return_from_invoice(invoice_name: str, credit_note: dict) -> s
 	frappe.db.set_value("Sales Invoice", return_doc.name, "custom_xero_credit_note_status", credit_note.get("Status"))
 
 	if mapped_any:
-		return_doc.submit()
+		return_doc.submit(ignore_permissions=True)
 
 	return return_doc.name
 
