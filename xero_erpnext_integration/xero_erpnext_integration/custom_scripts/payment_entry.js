@@ -1,6 +1,5 @@
 frappe.ui.form.on("Payment Entry", {
-	refresh(frm) {
-	},
+	refresh(frm) {},
 	before_submit: function (frm) {
 		// send_payment_to_xero(frm)
 	},

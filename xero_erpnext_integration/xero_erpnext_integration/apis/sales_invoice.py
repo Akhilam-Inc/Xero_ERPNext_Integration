@@ -22,7 +22,14 @@ def sync_invoice_payments():
 				["status", "in", ["Draft", "Unpaid", "Overdue", "Partly Paid"]],
 				["workflow_state", "in", ["Synced to Xero", "Submitted"]],
 			],
-			fields=["name", "customer", "grand_total", "outstanding_amount", "custom_xero_invoice_number", "company"],
+			fields=[
+				"name",
+				"customer",
+				"grand_total",
+				"outstanding_amount",
+				"custom_xero_invoice_number",
+				"company",
+			],
 			ignore_permissions=True,
 		)
 
@@ -56,10 +63,12 @@ def sync_invoice_payments():
 				# A9 fix: check payment_result before appending to processed list
 				payment_result = create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid)
 				if payment_result and payment_result.get("status") == "success":
-					processed_invoices.append({
-						"invoice": erpnext_invoice.name,
-						"amount_paid": amount_paid,
-					})
+					processed_invoices.append(
+						{
+							"invoice": erpnext_invoice.name,
+							"amount_paid": amount_paid,
+						}
+					)
 
 		return {
 			"status": "success",
@@ -68,7 +77,7 @@ def sync_invoice_payments():
 		}
 
 	except Exception as e:
-		frappe.log_error(title="Xero Payment Sync", message=f"Error syncing invoice payments: {str(e)}")
+		frappe.log_error(title="Xero Payment Sync", message=f"Error syncing invoice payments: {e!s}")
 		return {"status": "error", "message": str(e)}
 
 
@@ -98,7 +107,7 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		except Exception as workflow_error:
 			frappe.log_error(
 				title="Workflow State Change",
-				message=f"Error changing workflow state for {sales_invoice.name}: {str(workflow_error)}",
+				message=f"Error changing workflow state for {sales_invoice.name}: {workflow_error!s}",
 			)
 
 		# C4 fix: query Payment Entry Reference child table for existing payments.
@@ -223,11 +232,14 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 					"message": f"No receivable account found for company {sales_invoice.company}",
 				}
 
-		payment_entry.append("references", {
-			"reference_doctype": "Sales Invoice",
-			"reference_name": sales_invoice.name,
-			"allocated_amount": remaining_amount,
-		})
+		payment_entry.append(
+			"references",
+			{
+				"reference_doctype": "Sales Invoice",
+				"reference_name": sales_invoice.name,
+				"allocated_amount": remaining_amount,
+			},
+		)
 
 		# B4 fix: ignore_permissions — called from scheduler context
 		payment_entry.insert(ignore_permissions=True)
@@ -240,7 +252,7 @@ def create_payment_entry_from_xero(erpnext_invoice, xero_invoice, amount_paid):
 		}
 
 	except Exception as e:
-		frappe.log_error(title="Xero Payment Entry Creation", message=f"Error creating payment entry: {str(e)}")
+		frappe.log_error(title="Xero Payment Entry Creation", message=f"Error creating payment entry: {e!s}")
 		return {"status": "error", "message": str(e)}
 
 
@@ -341,7 +353,7 @@ def create_invoice(doc: str, method: str | None = None, update_invoice: bool = F
 			else:
 				response = client.make_request("POST", "/Invoices", data=data)
 		except Exception as api_error:
-			frappe.log_error(title="Xero API Call", message=f"Xero API call failed: {str(api_error)}")
+			frappe.log_error(title="Xero API Call", message=f"Xero API call failed: {api_error!s}")
 			frappe.throw(_("Failed to communicate with Xero API: {0}").format(str(api_error)))
 
 		if response and "Invoices" in response:
@@ -356,7 +368,7 @@ def create_invoice(doc: str, method: str | None = None, update_invoice: bool = F
 
 	except Exception as e:
 		# C7 fix: log_error once — frappe.throw() logs internally too
-		frappe.log_error(title="Xero Create Invoice", message=f"Failed to create invoice in Xero: {str(e)}")
+		frappe.log_error(title="Xero Create Invoice", message=f"Failed to create invoice in Xero: {e!s}")
 		frappe.throw(_("Failed to create invoice in Xero: {0}").format(str(e)))
 
 
@@ -386,7 +398,7 @@ def fetch_xero_contacts(contact_person: str) -> list:
 		return similar_contacts
 
 	except Exception as e:
-		frappe.log_error(title="Fetch Xero Contacts", message=f"Failed to fetch Xero contacts: {str(e)}")
+		frappe.log_error(title="Fetch Xero Contacts", message=f"Failed to fetch Xero contacts: {e!s}")
 		return []
 
 
@@ -417,7 +429,9 @@ def create_contact_and_map(contact_person: str, sales_invoice: str) -> dict:
 			"IsCustomer": is_customer,
 			"IsSupplier": is_supplier,
 			"Addresses": [{"AddressType": "STREET", "AddressLine1": contact_doc.address or ""}],
-			"Phones": [{"PhoneType": "DEFAULT", "PhoneNumber": contact_doc.phone or contact_doc.mobile_no or ""}],
+			"Phones": [
+				{"PhoneType": "DEFAULT", "PhoneNumber": contact_doc.phone or contact_doc.mobile_no or ""}
+			],
 		}
 
 		data = {"Contacts": [contact_data]}
@@ -436,7 +450,7 @@ def create_contact_and_map(contact_person: str, sales_invoice: str) -> dict:
 		return {"status": "error", "message": "Failed to create contact in Xero"}
 
 	except Exception as e:
-		frappe.log_error(title="Create Contact and Map", message=f"Failed to create and map contact: {str(e)}")
+		frappe.log_error(title="Create Contact and Map", message=f"Failed to create and map contact: {e!s}")
 		return {"status": "error", "message": str(e)}
 
 
@@ -456,7 +470,7 @@ def map_contact_to_xero(contact_id: str, contact_person: str, sales_invoice: str
 		return True
 
 	except Exception as e:
-		frappe.log_error(title="Map Contact to Xero", message=f"Failed to map contact: {str(e)}")
+		frappe.log_error(title="Map Contact to Xero", message=f"Failed to map contact: {e!s}")
 		return False
 
 
@@ -495,7 +509,7 @@ def cancel_invoice_in_xero(xero_invoice_id: str) -> dict:
 	except Exception as e:
 		frappe.log_error(
 			title="Xero Cancel Invoice",
-			message=f"Failed to cancel invoice {xero_invoice_id} in Xero: {str(e)}",
+			message=f"Failed to cancel invoice {xero_invoice_id} in Xero: {e!s}",
 		)
 		return {"status": "error", "message": str(e)}
 
@@ -510,7 +524,11 @@ def get_customer_contact_id(customer: str) -> str | None:
 
 		dynamic_links = frappe.get_all(
 			"Dynamic Link",
-			filters={"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"},
+			filters=[
+				["link_doctype", "=", "Customer"],
+				["link_name", "=", customer],
+				["parenttype", "=", "Contact"],
+			],
 			fields=["parent"],
 			limit=1,
 		)
@@ -521,5 +539,9 @@ def get_customer_contact_id(customer: str) -> str | None:
 			return contact.get("custom_contact_id")
 
 		return None
-	except Exception:
+	except Exception as e:
+		frappe.log_error(
+			title="Get Customer Contact ID",
+			message=f"Error getting contact id for customer {customer}: {e!s}",
+		)
 		frappe.throw(_("Error getting contact id for the selected customer"))

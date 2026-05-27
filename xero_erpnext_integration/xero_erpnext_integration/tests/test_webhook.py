@@ -9,13 +9,12 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-
 # ---------------------------------------------------------------------------
 # handle_intent_to_receive (GET)
 # ---------------------------------------------------------------------------
 
-class TestHandleIntentToReceive(FrappeTestCase):
 
+class TestHandleIntentToReceive(FrappeTestCase):
 	def _make_get_request(self, challenge=None):
 		mock_request = MagicMock()
 		mock_request.method = "GET"
@@ -30,6 +29,7 @@ class TestHandleIntentToReceive(FrappeTestCase):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_intent_to_receive,
 			)
+
 			result = handle_intent_to_receive()
 
 		self.assertEqual(result, "abc123")
@@ -43,6 +43,7 @@ class TestHandleIntentToReceive(FrappeTestCase):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_intent_to_receive,
 			)
+
 			result = handle_intent_to_receive()
 
 		self.assertEqual(result, "Bad Request")
@@ -52,8 +53,8 @@ class TestHandleIntentToReceive(FrappeTestCase):
 # handle_webhook_event (POST)
 # ---------------------------------------------------------------------------
 
-class TestHandleWebhookEvent(FrappeTestCase):
 
+class TestHandleWebhookEvent(FrappeTestCase):
 	def _build_signature(self, secret, body):
 		hashed = hmac.new(bytes(secret, "utf8"), body, hashlib.sha256)
 		return base64.b64encode(hashed.digest()).decode("utf-8")
@@ -66,13 +67,13 @@ class TestHandleWebhookEvent(FrappeTestCase):
 		mock_settings = MagicMock()
 		mock_settings.webhook_secret = "test-secret"
 
-		with patch("frappe.get_single", return_value=mock_settings), \
-			 patch("frappe.local") as mock_local:
+		with patch("frappe.get_single", return_value=mock_settings), patch("frappe.local") as mock_local:
 			mock_local.request = mock_request
 			mock_local.response = MagicMock()
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_webhook_event,
 			)
+
 			result = handle_webhook_event()
 
 		self.assertEqual(result, "Unauthorized")
@@ -86,13 +87,13 @@ class TestHandleWebhookEvent(FrappeTestCase):
 		mock_settings = MagicMock()
 		mock_settings.webhook_secret = "test-secret"
 
-		with patch("frappe.get_single", return_value=mock_settings), \
-			 patch("frappe.local") as mock_local:
+		with patch("frappe.get_single", return_value=mock_settings), patch("frappe.local") as mock_local:
 			mock_local.request = mock_request
 			mock_local.response = MagicMock()
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_webhook_event,
 			)
+
 			result = handle_webhook_event()
 
 		self.assertEqual(result, "Unauthorized")
@@ -110,13 +111,13 @@ class TestHandleWebhookEvent(FrappeTestCase):
 		mock_settings = MagicMock()
 		mock_settings.webhook_secret = secret
 
-		with patch("frappe.get_single", return_value=mock_settings), \
-			 patch("frappe.local") as mock_local:
+		with patch("frappe.get_single", return_value=mock_settings), patch("frappe.local") as mock_local:
 			mock_local.request = mock_request
 			mock_local.response = MagicMock()
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_webhook_event,
 			)
+
 			result = handle_webhook_event()
 
 		self.assertEqual(result, "OK")
@@ -126,8 +127,8 @@ class TestHandleWebhookEvent(FrappeTestCase):
 # process_webhook_event
 # ---------------------------------------------------------------------------
 
-class TestProcessWebhookEvent(FrappeTestCase):
 
+class TestProcessWebhookEvent(FrappeTestCase):
 	def test_invoice_update_event_triggers_update(self):
 		event = {
 			"eventCategory": "INVOICE",
@@ -139,6 +140,7 @@ class TestProcessWebhookEvent(FrappeTestCase):
 			"xero_erpnext_integration.xero_erpnext_integration.apis.webhook.update_invoice_from_xero"
 		) as mock_update:
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import process_webhook_event
+
 			process_webhook_event(event)
 
 		mock_update.assert_called_once_with("xero-invoice-id")
@@ -154,6 +156,7 @@ class TestProcessWebhookEvent(FrappeTestCase):
 			"xero_erpnext_integration.xero_erpnext_integration.apis.webhook.update_invoice_from_xero"
 		) as mock_update:
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import process_webhook_event
+
 			process_webhook_event(event)
 
 		mock_update.assert_not_called()

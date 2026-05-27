@@ -1,6 +1,0 @@
-# Frappe auto-generated and third-party files — excluded from semgrep scans
-node_modules/
-.git/
-dist/
-*.min.js
-**/migrations/

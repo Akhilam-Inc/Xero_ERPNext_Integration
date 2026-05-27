@@ -62,7 +62,7 @@ def on_submit(doc, method=None):
 	except Exception as e:
 		frappe.log_error(
 			title="Xero Create Invoice",
-			message=f"Error creating invoice {doc.name} in Xero: {str(e)}",
+			message=f"Error creating invoice {doc.name} in Xero: {e!s}",
 		)
 		frappe.throw(_("Error creating invoice in Xero: {0}").format(str(e)))
 
@@ -97,7 +97,7 @@ def on_cancel(doc, method=None):
 	except Exception as e:
 		frappe.log_error(
 			title="Xero Cancel Invoice",
-			message=f"Error cancelling invoice {doc.name} in Xero: {str(e)}",
+			message=f"Error cancelling invoice {doc.name} in Xero: {e!s}",
 		)
 		frappe.msgprint(
 			_(

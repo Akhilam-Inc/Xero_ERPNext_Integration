@@ -26,13 +26,15 @@ def sync_voided_invoices():
 		voided_invoices = response["Invoices"]
 
 		# C1 fix: informational messages belong in logger, not Error Log
-		frappe.logger().info(f"Voided Invoice Sync: found {len(voided_invoices)} voided invoices in Xero for today")
+		frappe.logger().info(
+			f"Voided Invoice Sync: found {len(voided_invoices)} voided invoices in Xero for today"
+		)
 
 		for xero_invoice in voided_invoices:
 			process_voided_invoice(xero_invoice)
 
 	except Exception as e:
-		frappe.log_error(title="Voided Invoice Sync", message=f"Error in voided invoice sync: {str(e)}")
+		frappe.log_error(title="Voided Invoice Sync", message=f"Error in voided invoice sync: {e!s}")
 
 
 def process_voided_invoice(xero_invoice):
@@ -84,7 +86,7 @@ def process_voided_invoice(xero_invoice):
 	except Exception as e:
 		frappe.log_error(
 			title="Voided Invoice Sync",
-			message=f"Error processing voided invoice {xero_invoice.get('InvoiceID', 'Unknown')}: {str(e)}",
+			message=f"Error processing voided invoice {xero_invoice.get('InvoiceID', 'Unknown')}: {e!s}",
 		)
 
 
@@ -98,7 +100,7 @@ def cancel_invoice_in_erpnext(sales_invoice, xero_invoice_id, xero_invoice_numbe
 		sales_invoice_doc.flags.ignore_permissions = True
 		sales_invoice_doc.cancel()
 
-		comment_text = f"Invoice cancelled automatically via scheduler due to VOID status in Xero"
+		comment_text = "Invoice cancelled automatically via scheduler due to VOID status in Xero"
 		if xero_invoice_id:
 			comment_text += f" (Invoice ID: {xero_invoice_id}"
 			if xero_invoice_number:
@@ -108,10 +110,12 @@ def cancel_invoice_in_erpnext(sales_invoice, xero_invoice_id, xero_invoice_numbe
 		sales_invoice_doc.add_comment("Comment", comment_text)
 
 		# C1 fix: use logger for success messages — not Error Log
-		frappe.logger().info(f"Voided Invoice Sync: cancelled invoice {sales_invoice['name']} due to VOID in Xero")
+		frappe.logger().info(
+			f"Voided Invoice Sync: cancelled invoice {sales_invoice['name']} due to VOID in Xero"
+		)
 
 	except Exception as e:
 		frappe.log_error(
 			title="Voided Invoice Sync",
-			message=f"Error cancelling invoice {sales_invoice['name']}: {str(e)}",
+			message=f"Error cancelling invoice {sales_invoice['name']}: {e!s}",
 		)

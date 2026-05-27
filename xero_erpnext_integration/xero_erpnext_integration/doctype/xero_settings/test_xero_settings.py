@@ -18,7 +18,8 @@ class TestXeroSettingsDocType(FrappeTestCase):
 		field = self._get_field("access_token")
 		self.assertIsNotNone(field, "access_token field missing from Xero Settings")
 		self.assertEqual(
-			field.fieldtype, "Password",
+			field.fieldtype,
+			"Password",
 			"access_token must be Password fieldtype to prevent plaintext storage",
 		)
 
@@ -26,7 +27,8 @@ class TestXeroSettingsDocType(FrappeTestCase):
 		field = self._get_field("refresh_token")
 		self.assertIsNotNone(field, "refresh_token field missing from Xero Settings")
 		self.assertEqual(
-			field.fieldtype, "Password",
+			field.fieldtype,
+			"Password",
 			"refresh_token must be Password fieldtype to prevent plaintext storage",
 		)
 
@@ -34,7 +36,8 @@ class TestXeroSettingsDocType(FrappeTestCase):
 		field = self._get_field("client_secret")
 		self.assertIsNotNone(field, "client_secret field missing from Xero Settings")
 		self.assertEqual(
-			field.fieldtype, "Password",
+			field.fieldtype,
+			"Password",
 			"client_secret must be Password fieldtype",
 		)
 
@@ -47,5 +50,12 @@ class TestXeroSettingsDocType(FrappeTestCase):
 	def test_required_fields_present(self):
 		meta = frappe.get_meta("Xero Settings")
 		fieldnames = [f.fieldname for f in meta.fields]
-		for required in ("client_id", "client_secret", "redirect_uri", "access_token", "refresh_token", "tenant_id"):
+		for required in (
+			"client_id",
+			"client_secret",
+			"redirect_uri",
+			"access_token",
+			"refresh_token",
+			"tenant_id",
+		):
 			self.assertIn(required, fieldnames, f"Required field '{required}' missing from Xero Settings")

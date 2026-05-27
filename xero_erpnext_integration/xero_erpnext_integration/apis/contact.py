@@ -66,5 +66,5 @@ def create_contact(doc: str, method: str | None = None) -> dict | None:
 		return None
 
 	except Exception as e:
-		frappe.log_error(title="Xero Create Contact", message=f"Failed to create contact: {str(e)}")
+		frappe.log_error(title="Xero Create Contact", message=f"Failed to create contact: {e!s}")
 		return None

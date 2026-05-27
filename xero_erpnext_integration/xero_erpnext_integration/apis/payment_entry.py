@@ -68,7 +68,7 @@ def create_payment(doc: str, method: str | None = None):
 		return {"status": "error", "message": "Failed to create payment in Xero"}
 
 	except Exception as e:
-		frappe.log_error(title="Xero Create Payment", message=f"Failed to create payment in Xero: {str(e)}")
+		frappe.log_error(title="Xero Create Payment", message=f"Failed to create payment in Xero: {e!s}")
 		frappe.throw(_("Failed to create payment in Xero: {0}").format(str(e)))
 		return False
 
@@ -88,7 +88,9 @@ def get_account_code(account_name: str) -> str | None:
 			return custom_code
 		return frappe.db.get_single_value("Xero Settings", "default_account_code") or None
 	except Exception as e:
-		frappe.log_error(title="Get Account Code", message=f"Error getting account code for {account_name}: {str(e)}")
+		frappe.log_error(
+			title="Get Account Code", message=f"Error getting account code for {account_name}: {e!s}"
+		)
 		return None
 
 
@@ -112,7 +114,7 @@ def get_customer_contact_id(customer: str) -> str | None:
 	except Exception as e:
 		frappe.log_error(
 			title="Get Customer Contact ID",
-			message=f"Error getting contact id for customer {customer}: {str(e)}"
+			message=f"Error getting contact id for customer {customer}: {e!s}",
 		)
 		return None
 
