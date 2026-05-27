@@ -7,9 +7,9 @@ import frappe
 from frappe import _
 
 
-@frappe.whitelist(
+@frappe.whitelist(  # nosemgrep — Xero sends webhook POSTs without session auth; guest access is required by design
 	allow_guest=True, methods=["GET", "POST"]
-)  # nosemgrep — Xero sends webhook POSTs without session auth; guest access is required by design
+)
 def webhook():
 	"""Main Xero webhook endpoint"""
 	try:

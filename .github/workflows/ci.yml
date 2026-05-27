@@ -52,8 +52,9 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          # Frappe v16 requires Python 3.12+ (PEP 695 type alias syntax)
-          python-version: '3.12'
+          # frappe==16.19+ declares Python>=3.14,<3.15 in pyproject.toml
+          python-version: '3.14'
+          allow-prereleases: true  # 3.14 is in pre-release on GitHub Actions
 
       - name: Setup Node
         uses: actions/setup-node@v4
