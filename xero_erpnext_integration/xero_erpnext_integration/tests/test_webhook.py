@@ -24,27 +24,25 @@ class TestHandleIntentToReceive(FrappeTestCase):
 	def test_returns_challenge_value_when_present(self):
 		mock_request = self._make_get_request(challenge="abc123")
 
-		with patch("frappe.local") as mock_local:
-			mock_local.request = mock_request
-			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
-				handle_intent_to_receive,
-			)
+		frappe.local.request = mock_request
+		from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
+			handle_intent_to_receive,
+		)
 
-			result = handle_intent_to_receive()
+		result = handle_intent_to_receive()
 
 		self.assertEqual(result, "abc123")
 
 	def test_returns_400_when_no_challenge(self):
 		mock_request = self._make_get_request()
 
-		with patch("frappe.local") as mock_local:
-			mock_local.request = mock_request
-			mock_local.response = MagicMock()
-			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
-				handle_intent_to_receive,
-			)
+		frappe.local.request = mock_request
+		frappe.local.response = MagicMock()
+		from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
+			handle_intent_to_receive,
+		)
 
-			result = handle_intent_to_receive()
+		result = handle_intent_to_receive()
 
 		self.assertEqual(result, "Bad Request")
 
@@ -65,11 +63,11 @@ class TestHandleWebhookEvent(FrappeTestCase):
 		mock_request.data = b"{}"
 
 		mock_settings = MagicMock()
-		mock_settings.webhook_secret = "test-secret"
+		mock_settings.get_password.return_value = "test-secret"
 
-		with patch("frappe.get_single", return_value=mock_settings), patch("frappe.local") as mock_local:
-			mock_local.request = mock_request
-			mock_local.response = MagicMock()
+		with patch("frappe.get_single", return_value=mock_settings):
+			frappe.local.request = mock_request
+			frappe.local.response = MagicMock()
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_webhook_event,
 			)
@@ -85,11 +83,11 @@ class TestHandleWebhookEvent(FrappeTestCase):
 		mock_request.data = body
 
 		mock_settings = MagicMock()
-		mock_settings.webhook_secret = "test-secret"
+		mock_settings.get_password.return_value = "test-secret"
 
-		with patch("frappe.get_single", return_value=mock_settings), patch("frappe.local") as mock_local:
-			mock_local.request = mock_request
-			mock_local.response = MagicMock()
+		with patch("frappe.get_single", return_value=mock_settings):
+			frappe.local.request = mock_request
+			frappe.local.response = MagicMock()
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_webhook_event,
 			)
@@ -109,11 +107,11 @@ class TestHandleWebhookEvent(FrappeTestCase):
 		mock_request.json = {"events": []}
 
 		mock_settings = MagicMock()
-		mock_settings.webhook_secret = secret
+		mock_settings.get_password.return_value = secret
 
-		with patch("frappe.get_single", return_value=mock_settings), patch("frappe.local") as mock_local:
-			mock_local.request = mock_request
-			mock_local.response = MagicMock()
+		with patch("frappe.get_single", return_value=mock_settings):
+			frappe.local.request = mock_request
+			frappe.local.response = MagicMock()
 			from xero_erpnext_integration.xero_erpnext_integration.apis.webhook import (
 				handle_webhook_event,
 			)

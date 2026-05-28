@@ -44,9 +44,7 @@ class TestCreatePayment(FrappeTestCase):
 
 		mock_payment = _make_mock_payment(xero_invoice_id=None)
 
-		sinv = MagicMock()
-		sinv.get.return_value = None
-		with patch("frappe.get_doc", return_value=sinv):
+		with patch("frappe.db.get_value", return_value=None):
 			self.assertRaises(frappe.ValidationError, create_payment, mock_payment)
 
 	@patch(XERO_CLIENT_PATH)
@@ -56,11 +54,9 @@ class TestCreatePayment(FrappeTestCase):
 		mock_factory.return_value = mock_client
 
 		mock_payment = _make_mock_payment()
-		sinv = MagicMock()
-		sinv.get.return_value = "xero-inv-id"
 
 		with (
-			patch("frappe.get_doc", return_value=sinv),
+			patch("frappe.db.get_value", return_value="xero-inv-id"),
 			patch(
 				"xero_erpnext_integration.xero_erpnext_integration.apis.payment_entry.get_account_code",
 				return_value="880",

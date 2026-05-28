@@ -93,7 +93,7 @@ class TestOnCancel(FrappeTestCase):
 		doc = _make_doc(custom_xero_invoice_number="xero-invoice-abc")
 
 		with patch(
-			"xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.cancel_invoice_in_xero",
+			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.cancel_invoice_in_xero",
 			return_value={"status": "success"},
 		) as mock_cancel:
 			on_cancel(doc)
@@ -108,7 +108,7 @@ class TestOnCancel(FrappeTestCase):
 		doc = _make_doc(custom_xero_invoice_number="xero-invoice-abc")
 
 		with patch(
-			"xero_erpnext_integration.xero_erpnext_integration.custom_scripts.sales_invoice.cancel_invoice_in_xero",
+			"xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.cancel_invoice_in_xero",
 			return_value={"status": "error", "message": "Not found"},
 		):
 			# Should not raise — on_cancel shows msgprint warning instead
