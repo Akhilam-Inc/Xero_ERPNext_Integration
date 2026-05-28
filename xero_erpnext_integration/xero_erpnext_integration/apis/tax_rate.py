@@ -38,14 +38,13 @@ def _resolve_report_tax_type(account) -> str:
 	# Heuristic: accounts whose name contains "purchase"/"input" map to INPUT,
 	# everything else defaults to OUTPUT.
 	name_blob = " ".join(
-		filter(
-			None,
-			[
-				(account.account_name or ""),
-				(account.name or ""),
-				(account.parent_account or ""),
-			],
-		)
+		part
+		for part in [
+			(account.account_name or ""),
+			(account.name or ""),
+			(account.parent_account or ""),
+		]
+		if part
 	).lower()
 	if any(word in name_blob for word in ("purchase", "input", "buy", "expense")):
 		return DEFAULT_PURCHASE_REPORT_TAX_TYPE
@@ -153,7 +152,7 @@ def create_tax_rate(account_name: str, update: bool = False) -> dict:
 
 
 @frappe.whitelist()
-def sync_selected_tax_rates(accounts) -> dict:
+def sync_selected_tax_rates(accounts: str) -> dict:
 	"""Bulk-sync a list of ERPNext Tax Accounts to Xero.
 
 	Explicit user selection in the list view counts as intent to sync, so this
@@ -165,13 +164,27 @@ def sync_selected_tax_rates(accounts) -> dict:
 	if not isinstance(names, list):
 		frappe.throw(_("Invalid accounts payload"))
 
+	names = [name for name in names if name]
+	if not names:
+		return {"created": [], "skipped": [], "failed": []}
+
+	rows = frappe.get_all(
+		"Account",
+		filters={"name": ["in", names]},
+		fields=["name", "account_type", "custom_xero_tax_type", "custom_send_to_xero"],
+		limit=len(names),
+	)
+	by_name = {row.name: row for row in rows}
+
 	results = {"created": [], "skipped": [], "failed": []}
+	account_updates: dict[str, dict] = {}
 
 	for name in names:
-		if not name:
-			continue
 		try:
-			account = frappe.get_doc("Account", name)
+			account = by_name.get(name)
+			if not account:
+				results["failed"].append({"name": name, "error": _("Account not found")})
+				continue
 			if (account.account_type or "") != "Tax":
 				results["skipped"].append({"name": name, "reason": "Not a Tax account"})
 				continue
@@ -186,14 +199,16 @@ def sync_selected_tax_rates(accounts) -> dict:
 
 			res = create_tax_rate(name, update=False)
 			if res and res.get("status") == "success":
-				# Also flip the checkbox so the form reflects the synced state
 				if not account.get("custom_send_to_xero"):
-					frappe.db.set_value("Account", name, "custom_send_to_xero", 1)
+					account_updates[name] = {"custom_send_to_xero": 1}
 				results["created"].append({"name": name, "tax_type": (res.get("data") or {}).get("TaxType")})
 			else:
 				results["failed"].append({"name": name, "error": (res or {}).get("message") or "Unknown"})
 		except Exception as e:
 			results["failed"].append({"name": name, "error": str(e)})
+
+	if account_updates:
+		frappe.db.bulk_update("Account", account_updates)
 
 	return results
 
@@ -293,19 +308,16 @@ def _create_tax_account_from_xero(rate: dict, company: str, parent_account: str)
 
 	# Persist tax_rate explicitly: some Account controller flows can ignore the
 	# in-memory value during the initial insert validate pass, so re-stamp it.
-	if effective_rate:
-		frappe.db.set_value("Account", account.name, "tax_rate", effective_rate)
-
-	# Stamp Xero linkage so we don't re-create on the next pull
 	updates = {
 		"custom_xero_tax_type": rate.get("TaxType"),
 		"custom_send_to_xero": 1,
 	}
-	if rate.get("ReportTaxType"):
+	if effective_rate:
+		updates["tax_rate"] = effective_rate
+	if rate.get("ReportTaxType") and frappe.db.has_column("Account", "custom_xero_report_tax_type"):
 		updates["custom_xero_report_tax_type"] = rate.get("ReportTaxType")
-	for fieldname, value in updates.items():
-		if frappe.db.has_column("Account", fieldname):
-			frappe.db.set_value("Account", account.name, fieldname, value)
+
+	frappe.db.set_value("Account", account.name, updates)
 
 	return account.name
 
@@ -328,7 +340,9 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 	"""
 	# Resolve company
 	if not company:
-		companies = frappe.get_all("Company", pluck="name")
+		companies = frappe.get_all(
+			"Company", pluck="name", limit=100
+		)  # nosemgrep — company count is small; limit is a safety cap
 		if len(companies) == 1:
 			company = companies[0]
 		else:
@@ -355,7 +369,7 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 
 	# Index existing Tax accounts under the target company so we don't try to
 	# re-create them (and so we can back-fill the TaxType / tax_rate on a match).
-	tax_accounts = frappe.get_all(
+	tax_accounts = frappe.get_all(  # nosemgrep — must load all Tax accounts for name matching during pull
 		"Account",
 		filters={"account_type": "Tax", "company": company},
 		fields=["name", "account_name", "custom_xero_tax_type", "tax_rate"],
@@ -366,6 +380,7 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 	created: list[dict] = []
 	skipped: list[dict] = []
 	failed: list[dict] = []
+	account_updates: dict[str, dict] = {}
 
 	for r in rates:
 		tax_type = r.get("TaxType")
@@ -387,14 +402,13 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 				)
 				continue
 
+			updates: dict = account_updates.setdefault(match.name, {})
 			if not already_linked:
-				frappe.db.set_value("Account", match.name, "custom_xero_tax_type", tax_type)
+				updates["custom_xero_tax_type"] = tax_type
 			if r.get("ReportTaxType") and frappe.db.has_column("Account", "custom_xero_report_tax_type"):
-				frappe.db.set_value(
-					"Account", match.name, "custom_xero_report_tax_type", r.get("ReportTaxType")
-				)
+				updates["custom_xero_report_tax_type"] = r.get("ReportTaxType")
 			if rate_needs_update:
-				frappe.db.set_value("Account", match.name, "tax_rate", effective_rate)
+				updates["tax_rate"] = effective_rate
 			mapped.append({"account": match.name, "tax_type": tax_type, "tax_rate": effective_rate})
 			continue
 
@@ -405,6 +419,9 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 				created.append({"account": new_name, "tax_type": tax_type, "xero_name": xero_name_raw})
 		except Exception as e:
 			failed.append({"xero_name": xero_name_raw, "error": str(e)})
+
+	if account_updates:
+		frappe.db.bulk_update("Account", account_updates)
 
 	return {
 		"company": company,

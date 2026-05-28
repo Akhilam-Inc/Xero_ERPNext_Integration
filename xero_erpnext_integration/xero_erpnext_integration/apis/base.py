@@ -291,13 +291,6 @@ class XeroAPIClient:
 		except Exception as e:
 			frappe.log_error(title="Xero Tenant Info", message=f"Failed to get tenant info: {e!s}")
 
-	def _persist_tokens_to_settings(self):
-		"""Write current tokens/tenant to Xero Settings and refresh in-memory headers."""
-		self.settings.flags.ignore_permissions = True
-		self.settings.save()
-		frappe.db.commit()
-		self._reload_credentials_from_db()
-
 	def refresh_access_token(self):
 		"""Refresh access token using refresh token (Xero requires HTTP Basic auth)."""
 		try:

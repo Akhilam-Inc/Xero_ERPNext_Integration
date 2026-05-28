@@ -169,7 +169,7 @@ def build_xero_line_item(item, invoice, line_amount_types="Exclusive", item_code
 
 
 @frappe.whitelist()
-def sync_selected_invoices(invoices):
+def sync_selected_invoices(invoices: str):
 	"""
 	Bulk sync selected Sales Invoices to Xero.
 
@@ -180,16 +180,35 @@ def sync_selected_invoices(invoices):
 	"""
 	invoice_names = frappe.parse_json(invoices) or []
 	if not isinstance(invoice_names, list):
-		frappe.throw("Invalid invoices payload")
+		frappe.throw(_("Invalid invoices payload"))
+
+	invoice_names = [name for name in invoice_names if name]
+	if not invoice_names:
+		return {"created": [], "skipped": [], "failed": []}
+
+	rows = frappe.get_all(
+		"Sales Invoice",
+		filters={"name": ["in", invoice_names]},
+		fields=[
+			"name",
+			"docstatus",
+			"custom_do_not_sync_to_xero",
+			"is_return",
+			"custom_xero_invoice_number",
+		],
+		limit=len(invoice_names),
+	)
+	by_name = {row.name: row for row in rows}
 
 	results = {"created": [], "skipped": [], "failed": []}
+	invoice_updates: dict[str, dict] = {}
 
 	for name in invoice_names:
 		try:
-			if not name:
+			si = by_name.get(name)
+			if not si:
+				results["failed"].append({"name": name, "error": _("Sales Invoice not found")})
 				continue
-
-			si = frappe.get_doc("Sales Invoice", name)
 
 			# Only sync submitted invoices
 			if si.docstatus != 1:
@@ -222,12 +241,15 @@ def sync_selected_invoices(invoices):
 			xero_invoice = res.get("data") or {}
 			xero_id = xero_invoice.get("InvoiceID")
 			if xero_id:
-				frappe.db.set_value("Sales Invoice", si.name, "custom_xero_invoice_number", xero_id)
+				invoice_updates[si.name] = {"custom_xero_invoice_number": xero_id}
 
 			results["created"].append({"name": si.name, "xero_invoice_id": xero_id})
 
 		except Exception as e:
 			results["failed"].append({"name": name, "error": str(e)})
+
+	if invoice_updates:
+		frappe.db.bulk_update("Sales Invoice", invoice_updates)
 
 	return results
 
