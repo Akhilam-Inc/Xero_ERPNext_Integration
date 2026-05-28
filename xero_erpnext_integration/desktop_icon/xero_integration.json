@@ -1,0 +1,22 @@
+{
+ "app": "xero_erpnext_integration",
+ "bg_color": "blue",
+ "creation": "2026-05-19 18:50:48.671465",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "expenses",
+ "icon_type": "Link",
+ "idx": 1,
+ "label": "Xero Integration",
+ "link_to": "Xero Integration",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-05-21 15:09:18.308188",
+ "modified_by": "Administrator",
+ "name": "Xero Integration",
+ "owner": "Administrator",
+ "parent_icon": "",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}
