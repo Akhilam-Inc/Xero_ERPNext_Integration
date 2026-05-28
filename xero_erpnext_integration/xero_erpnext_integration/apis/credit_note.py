@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import frappe
 from frappe.utils import flt
@@ -20,7 +20,7 @@ def _as_xero_date_string(d) -> str | None:
 
 def _xero_where_updated_since(hours: int) -> str:
 	# Xero query format: UpdatedDateUTC>=DateTime(2026,05,08,10,00,00)
-	dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+	dt = datetime.now(UTC) - timedelta(hours=hours)
 	return f"UpdatedDateUTC>=DateTime({dt.year},{dt.month:02d},{dt.day:02d},{dt.hour:02d},{dt.minute:02d},{dt.second:02d})"
 
 
