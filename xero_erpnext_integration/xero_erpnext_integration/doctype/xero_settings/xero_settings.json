@@ -23,8 +23,8 @@
   "access_token_url",
   "access_token",
   "redirect_uri",
-  "tenant_id_url",
   "refresh_token",
+  "tenant_id_url",
   "tenant_id",
   "tenant_name",
   "section_break_invoice_defaults",
@@ -149,28 +149,28 @@
    "label": "Invoice Defaults"
   },
   {
+   "description": "Xero account code used for line items when not set on the ERPNext Item (e.g. 200 for Sales). Find valid codes in Xero Chart of Accounts.",
    "fieldname": "default_account_code",
    "fieldtype": "Data",
-   "label": "Default Account Code",
-   "description": "Xero account code used for line items when not set on the ERPNext Item (e.g. 200 for Sales). Find valid codes in Xero Chart of Accounts."
+   "label": "Default Account Code"
   },
   {
    "fieldname": "column_break_invoice_defaults",
    "fieldtype": "Column Break"
   },
   {
+   "default": "NONE",
+   "description": "Xero TaxType for line items with no ERPNext tax (e.g. NONE, OUTPUT, EXEMPTOUTPUT). NONE = zero/no tax.",
    "fieldname": "default_tax_type",
    "fieldtype": "Data",
-   "label": "Default Tax Type",
-   "default": "NONE",
-   "description": "Xero TaxType for line items with no ERPNext tax (e.g. NONE, OUTPUT, EXEMPTOUTPUT). NONE = zero/no tax."
+   "label": "Default Tax Type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-26 13:15:00.000000",
+ "modified": "2026-05-28 12:39:17.794562",
  "modified_by": "Administrator",
  "module": "Xero Erpnext Integration",
  "name": "Xero Settings",
@@ -187,6 +187,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

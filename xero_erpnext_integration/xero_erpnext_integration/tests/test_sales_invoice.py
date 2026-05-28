@@ -7,6 +7,8 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, today
 
+from xero_erpnext_integration.xero_erpnext_integration.tests.utils import insert_test_customer
+
 XERO_CLIENT_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_xero_client"
 MOCK_CONTACT_ID = "xero-contact-uuid-001"
 MOCK_INVOICE_ID = "xero-invoice-uuid-001"
@@ -26,27 +28,11 @@ def _mock_client(make_request_return=None):
 class TestGetCustomerContactId(FrappeTestCase):
 	def setUp(self):
 		# Customer whose contact_id is stored directly on the Customer doc
-		self.direct_customer = frappe.get_doc(
-			{
-				"doctype": "Customer",
-				"customer_name": "_XeroTest Direct",
-				"customer_type": "Individual",
-				"customer_group": "All Customer Groups",
-				"territory": "All Territories",
-			}
-		).insert(ignore_permissions=True)
+		self.direct_customer = insert_test_customer("_XeroTest Direct")
 		frappe.db.set_value("Customer", self.direct_customer.name, "custom_contact_id", MOCK_CONTACT_ID)
 
 		# Customer whose contact_id comes through a Contact linked via Dynamic Link
-		self.linked_customer = frappe.get_doc(
-			{
-				"doctype": "Customer",
-				"customer_name": "_XeroTest Linked",
-				"customer_type": "Individual",
-				"customer_group": "All Customer Groups",
-				"territory": "All Territories",
-			}
-		).insert(ignore_permissions=True)
+		self.linked_customer = insert_test_customer("_XeroTest Linked")
 		self.contact = frappe.get_doc(
 			{
 				"doctype": "Contact",
@@ -77,15 +63,7 @@ class TestGetCustomerContactId(FrappeTestCase):
 			get_customer_contact_id,
 		)
 
-		orphan = frappe.get_doc(
-			{
-				"doctype": "Customer",
-				"customer_name": "_XeroTest Orphan",
-				"customer_type": "Individual",
-				"customer_group": "All Customer Groups",
-				"territory": "All Territories",
-			}
-		).insert(ignore_permissions=True)
+		orphan = insert_test_customer("_XeroTest Orphan")
 		result = get_customer_contact_id(orphan.name)
 		self.assertIsNone(result)
 
@@ -108,6 +86,8 @@ class TestCreateInvoice(FrappeTestCase):
 		doc.due_date = frappe.utils.getdate(add_days(today(), 30))
 		doc.custom_xero_invoice_number = None
 		doc.workflow_state = "Draft"
+		doc.is_return = 0
+		doc.taxes = []
 		item = MagicMock()
 		item.description = "Test Item"
 		item.item_name = "Test Item"
@@ -331,15 +311,7 @@ class TestFetchXeroContacts(FrappeTestCase):
 
 class TestMapContactToXero(FrappeTestCase):
 	def setUp(self):
-		self.customer = frappe.get_doc(
-			{
-				"doctype": "Customer",
-				"customer_name": "_XeroTest MapContact",
-				"customer_type": "Individual",
-				"customer_group": "All Customer Groups",
-				"territory": "All Territories",
-			}
-		).insert(ignore_permissions=True)
+		self.customer = insert_test_customer("_XeroTest MapContact")
 		self.contact = frappe.get_doc(
 			{
 				"doctype": "Contact",

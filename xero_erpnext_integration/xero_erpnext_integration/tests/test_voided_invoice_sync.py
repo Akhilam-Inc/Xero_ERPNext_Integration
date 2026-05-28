@@ -6,9 +6,19 @@ from unittest.mock import MagicMock, call, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-XERO_CLIENT_PATH = (
-	"xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync.get_xero_client"
-)
+XERO_CLIENT_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.base.get_xero_client"
+
+
+def _patch_sales_invoice_lookup(invoices):
+	"""Patch get_all only for Sales Invoice queries so Error Log writes still work."""
+	real_get_all = frappe.get_all
+
+	def side_effect(doctype, *args, **kwargs):
+		if doctype == "Sales Invoice":
+			return invoices
+		return real_get_all(doctype, *args, **kwargs)
+
+	return patch("frappe.get_all", side_effect=side_effect)
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +87,7 @@ class TestSyncVoidedInvoices(FrappeTestCase):
 
 class TestProcessVoidedInvoice(FrappeTestCase):
 	def test_skips_when_no_matching_erpnext_invoice(self):
-		with patch("frappe.get_all", return_value=[]):
+		with _patch_sales_invoice_lookup([]):
 			from xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync import (
 				process_voided_invoice,
 			)
@@ -86,7 +96,7 @@ class TestProcessVoidedInvoice(FrappeTestCase):
 			process_voided_invoice({"InvoiceID": "unknown-id", "InvoiceNumber": "INV-X"})
 
 	def test_skips_already_cancelled_invoice(self):
-		with patch("frappe.get_all", return_value=[{"name": "SINV-001", "docstatus": 2, "grand_total": 100}]):
+		with _patch_sales_invoice_lookup([{"name": "SINV-001", "docstatus": 2, "grand_total": 100}]):
 			with patch(
 				"xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync.cancel_invoice_in_erpnext"
 			) as mock_cancel:
@@ -99,7 +109,7 @@ class TestProcessVoidedInvoice(FrappeTestCase):
 		mock_cancel.assert_not_called()
 
 	def test_skips_draft_invoice(self):
-		with patch("frappe.get_all", return_value=[{"name": "SINV-002", "docstatus": 0, "grand_total": 100}]):
+		with _patch_sales_invoice_lookup([{"name": "SINV-002", "docstatus": 0, "grand_total": 100}]):
 			with patch(
 				"xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync.cancel_invoice_in_erpnext"
 			) as mock_cancel:
@@ -112,7 +122,7 @@ class TestProcessVoidedInvoice(FrappeTestCase):
 		mock_cancel.assert_not_called()
 
 	def test_cancels_submitted_invoice(self):
-		with patch("frappe.get_all", return_value=[{"name": "SINV-003", "docstatus": 1, "grand_total": 100}]):
+		with _patch_sales_invoice_lookup([{"name": "SINV-003", "docstatus": 1, "grand_total": 100}]):
 			with patch(
 				"xero_erpnext_integration.xero_erpnext_integration.schedulers.voided_invoice_sync.cancel_invoice_in_erpnext"
 			) as mock_cancel:
