@@ -243,8 +243,24 @@ def _find_tax_parent_account(company: str) -> str | None:
 
 
 def _xero_effective_rate(rate: dict) -> float:
+	"""Resolve the effective tax rate for a Xero TaxRate payload.
+
+	Xero returns the per-component rate under `TaxComponents[].Rate`. For simple
+	(non-compound) rates we sum the non-compound components. As a fallback we use
+	the top-level `EffectiveRate` field Xero reports for the whole TaxRate.
+	"""
 	components = rate.get("TaxComponents") or []
-	return float(sum(flt(c.get("Rate")) for c in components if not c.get("IsCompound")))
+	component_total = float(sum(flt(c.get("Rate")) for c in components if not c.get("IsCompound")))
+	if component_total:
+		return component_total
+
+	# Fallback: top-level EffectiveRate (or any component rate when all are compound)
+	effective = rate.get("EffectiveRate")
+	if effective is not None:
+		return float(flt(effective))
+	if components:
+		return float(sum(flt(c.get("Rate")) for c in components))
+	return 0.0
 
 
 def _create_tax_account_from_xero(rate: dict, company: str, parent_account: str) -> str | None:
@@ -262,16 +278,23 @@ def _create_tax_account_from_xero(rate: dict, company: str, parent_account: str)
 	if existing:
 		return existing
 
+	effective_rate = _xero_effective_rate(rate)
+
 	account = frappe.new_doc("Account")
 	account.account_name = xero_name
 	account.parent_account = parent_account
 	account.company = company
 	account.account_type = "Tax"
 	account.is_group = 0
-	account.tax_rate = _xero_effective_rate(rate)
+	account.tax_rate = effective_rate
 	# Inherit root/report type from parent (Frappe will derive if left blank)
 	account.flags.ignore_permissions = True
 	account.insert()
+
+	# Persist tax_rate explicitly: some Account controller flows can ignore the
+	# in-memory value during the initial insert validate pass, so re-stamp it.
+	if effective_rate:
+		frappe.db.set_value("Account", account.name, "tax_rate", effective_rate)
 
 	# Stamp Xero linkage so we don't re-create on the next pull
 	updates = {
@@ -331,11 +354,11 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 	rates = response.get("TaxRates") or []
 
 	# Index existing Tax accounts under the target company so we don't try to
-	# re-create them (and so we can back-fill the TaxType on a match).
+	# re-create them (and so we can back-fill the TaxType / tax_rate on a match).
 	tax_accounts = frappe.get_all(
 		"Account",
 		filters={"account_type": "Tax", "company": company},
-		fields=["name", "account_name", "custom_xero_tax_type"],
+		fields=["name", "account_name", "custom_xero_tax_type", "tax_rate"],
 	)
 	by_name = {(a.account_name or "").strip().lower(): a for a in tax_accounts}
 
@@ -354,17 +377,25 @@ def pull_tax_rates_from_xero(company: str | None = None, parent_account: str | N
 
 		match = by_name.get(xero_name)
 		if match:
-			if match.custom_xero_tax_type == tax_type:
+			effective_rate = _xero_effective_rate(r)
+			rate_needs_update = effective_rate and flt(match.tax_rate) != flt(effective_rate)
+			already_linked = match.custom_xero_tax_type == tax_type
+
+			if already_linked and not rate_needs_update:
 				skipped.append(
 					{"xero_name": xero_name_raw, "reason": "Already mapped", "account": match.name}
 				)
 				continue
-			frappe.db.set_value("Account", match.name, "custom_xero_tax_type", tax_type)
+
+			if not already_linked:
+				frappe.db.set_value("Account", match.name, "custom_xero_tax_type", tax_type)
 			if r.get("ReportTaxType") and frappe.db.has_column("Account", "custom_xero_report_tax_type"):
 				frappe.db.set_value(
 					"Account", match.name, "custom_xero_report_tax_type", r.get("ReportTaxType")
 				)
-			mapped.append({"account": match.name, "tax_type": tax_type})
+			if rate_needs_update:
+				frappe.db.set_value("Account", match.name, "tax_rate", effective_rate)
+			mapped.append({"account": match.name, "tax_type": tax_type, "tax_rate": effective_rate})
 			continue
 
 		# No match -> create

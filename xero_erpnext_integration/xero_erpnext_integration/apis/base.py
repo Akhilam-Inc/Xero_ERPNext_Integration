@@ -318,7 +318,11 @@ class XeroAPIClient:
 				"refresh_token": self.refresh_token,
 			}
 
-			headers = {"Content-Type": "application/x-www-form-urlencoded"}
+			auth_header = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
+			headers = {
+				"Authorization": f"Basic {auth_header}",
+				"Content-Type": "application/x-www-form-urlencoded",
+			}
 
 			response = requests.post(self.token_url, data=refresh_payload, headers=headers)
 
@@ -328,6 +332,8 @@ class XeroAPIClient:
 				self.settings.access_token = token_response.get("access_token")
 				if token_response.get("refresh_token"):
 					self.settings.refresh_token = token_response.get("refresh_token")
+				if token_response.get("scope"):
+					self.settings.scope = token_response.get("scope")
 
 				expires_in = token_response.get("expires_in", 1800)
 				expires_at = datetime.now() + timedelta(seconds=expires_in)
@@ -402,7 +408,7 @@ class XeroAPIClient:
 					return {"message": "Success", "data": response.text}
 
 			if response.status_code == 401 and not token_refreshed:
-				# One refresh + retry (401 often means expired token OR missing scope/tenant).
+				# One refresh + retry (401 usually means an expired access token).
 				if not self.refresh_access_token():
 					self._raise_auth_error(
 						response,
@@ -418,20 +424,25 @@ class XeroAPIClient:
 				response = self._dispatch(method, url, request_headers, data, params)
 				self._log_request(method, url, data, params, response)
 
-			if response.status_code in [200, 201]:
-				try:
-					return response.json()
-				except Exception:
-					return {"message": "Success", "data": response.text}
+				if response.status_code in [200, 201]:
+					try:
+						return response.json()
+					except Exception:
+						return {"message": "Success", "data": response.text}
 
-			self._raise_auth_error(
-				response,
-				_(
-					"Xero still rejected the request after refreshing the token. "
-					"Re-authorize from Xero Settings and ensure scope includes "
-					"'accounting.settings' (required for Tax Rates)."
-				),
-			)
+			# Only treat 401/403 as auth/scope problems. Other statuses (e.g. 400
+			# validation) must surface the real Xero message, not a misleading token hint.
+			if response.status_code in (401, 403):
+				prefix = (
+					_(
+						"Xero still rejected the request after refreshing the token. "
+						"Re-authorize from Xero Settings and ensure scope includes "
+						"'accounting.settings' (required for Tax Rates)."
+					)
+					if token_refreshed
+					else _("Xero rejected the request (unauthorized). Re-authorize from Xero Settings.")
+				)
+				self._raise_auth_error(response, prefix)
 
 			self._raise_xero_error(response)
 
@@ -487,6 +498,12 @@ class XeroAPIClient:
 				msgs = [ve.get("Message") for ve in validation_errors if ve.get("Message")]
 				if msgs:
 					error_msg = "Xero validation error: " + " ; ".join(msgs)
+
+			# Top-level validation summary (common on 400 responses)
+			if error_msg.startswith("API request failed") and payload.get("Type") == "ValidationException":
+				detail = payload.get("Detail") or payload.get("Title")
+				if detail:
+					error_msg = f"Xero validation error: {detail}"
 
 			# OAuth/scope-style error
 			problem = payload.get("Title") or payload.get("Detail") or payload.get("error_description")
