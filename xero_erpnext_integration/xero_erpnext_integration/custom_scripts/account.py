@@ -59,7 +59,7 @@ def on_update(doc, method=None):
 			message=f"Failed to auto-sync Account {doc.name} to Xero: {e!s}",
 		)
 		frappe.msgprint(
-			_("Could not sync tax account to Xero: {0}").format(e),
+			_("Could not sync tax account to Xero: {0}").format(str(e)),
 			title=_("Xero Tax Rate Sync"),
 			indicator="orange",
 		)
