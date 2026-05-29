@@ -23,6 +23,13 @@
  {
   "docstatus": 0,
   "doctype": "Workflow Action Master",
+  "modified": "2026-05-29 09:55:00.000000",
+  "name": "Sync Return to Xero",
+  "workflow_action_name": "Sync Return to Xero"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
   "modified": "2025-08-13 02:11:54.325702",
   "name": "Submit",
   "workflow_action_name": "Submit"

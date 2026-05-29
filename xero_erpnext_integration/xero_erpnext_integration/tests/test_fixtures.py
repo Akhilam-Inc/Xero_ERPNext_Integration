@@ -116,9 +116,49 @@ class TestWorkflowFixtures(FrappeTestCase):
 			"Workflow Action Master 'Sync to Xero' not found",
 		)
 
+	def test_sync_return_to_xero_action_master_exists(self):
+		self.assertTrue(
+			frappe.db.exists("Workflow Action Master", "Sync Return to Xero"),
+			"Workflow Action Master 'Sync Return to Xero' not found",
+		)
+
 	def test_workflow_has_transitions(self):
 		transitions = frappe.get_all(
 			"Workflow Transition",
 			filters={"parent": "Sales Invoice Sync to Xero"},
 		)
 		self.assertGreater(len(transitions), 0, "Workflow has no transitions")
+
+	def test_credit_note_uses_sync_return_action(self):
+		transitions = frappe.get_all(
+			"Workflow Transition",
+			filters={
+				"parent": "Sales Invoice Sync to Xero",
+				"action": "Sync Return to Xero",
+			},
+			fields=["state", "next_state", "condition"],
+		)
+		self.assertTrue(
+			transitions,
+			"No 'Sync Return to Xero' transition is configured on the workflow",
+		)
+		for t in transitions:
+			self.assertEqual(t.state, "Draft")
+			self.assertIn("doc.is_return", t.condition or "")
+
+	def test_sync_to_xero_transitions_exclude_credit_notes(self):
+		transitions = frappe.get_all(
+			"Workflow Transition",
+			filters={
+				"parent": "Sales Invoice Sync to Xero",
+				"action": "Sync to Xero",
+			},
+			fields=["condition"],
+		)
+		self.assertTrue(transitions, "Expected 'Sync to Xero' transitions on the workflow")
+		for t in transitions:
+			self.assertIn(
+				"not doc.is_return",
+				t.condition or "",
+				"'Sync to Xero' transitions must exclude credit notes (is_return)",
+			)
