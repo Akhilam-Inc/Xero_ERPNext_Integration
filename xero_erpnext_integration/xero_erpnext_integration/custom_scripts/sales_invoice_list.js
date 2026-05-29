@@ -25,11 +25,7 @@ frappe.listview_settings["Sales Invoice"] = {
 			];
 		}
 		if (doc.workflow_state === "Submitted" || doc.docstatus === 1) {
-			return [
-				doc.status + " - " + __("Submitted"),
-				"blue",
-				"workflow_state,=,Submitted",
-			];
+			return [doc.status + " - " + __("Submitted"), "blue", "workflow_state,=,Submitted"];
 		}
 		return [doc.status + " - " + __("Draft"), "red", "workflow_state,=,Draft"];
 	},

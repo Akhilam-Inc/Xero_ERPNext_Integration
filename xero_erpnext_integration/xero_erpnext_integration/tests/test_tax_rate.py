@@ -188,9 +188,7 @@ class TestReportTaxTypeResolution(FrappeTestCase):
 	def test_response_resolver_returns_none_when_unknown(self):
 		client = MagicMock()
 		client.make_request.return_value = {"TaxRates": [{}]}
-		result = _resolve_response_report_tax_type(
-			xero_tax={}, payload={}, client=client, tax_type="TAX007"
-		)
+		result = _resolve_response_report_tax_type(xero_tax={}, payload={}, client=client, tax_type="TAX007")
 		self.assertIsNone(result)
 
 	def test_response_resolver_local_label_for_sales_account(self):

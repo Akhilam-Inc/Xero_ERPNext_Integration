@@ -34,8 +34,7 @@ function refresh_xero_field_values(frm, result) {
 		return;
 	}
 	const tax_type = result.tax_type || (result.data && result.data.TaxType);
-	const report_tax_type =
-		result.report_tax_type || (result.data && result.data.ReportTaxType);
+	const report_tax_type = result.report_tax_type || (result.data && result.data.ReportTaxType);
 
 	if (tax_type) {
 		frm.set_value("custom_xero_tax_type", tax_type);

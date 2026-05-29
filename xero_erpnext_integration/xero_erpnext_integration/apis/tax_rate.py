@@ -97,9 +97,7 @@ def _org_requires_report_tax_type(client, xero_rates: list[dict] | None = None) 
 
 def _valid_report_tax_types(xero_rates: list[dict]) -> set[str]:
 	return {
-		(r.get("ReportTaxType") or "").strip()
-		for r in xero_rates
-		if (r.get("ReportTaxType") or "").strip()
+		(r.get("ReportTaxType") or "").strip() for r in xero_rates if (r.get("ReportTaxType") or "").strip()
 	}
 
 
@@ -282,9 +280,7 @@ def create_tax_rate(account_name: str, update: bool = False) -> dict:
 	# can resolve the TaxType from `Account.custom_xero_tax_type`.
 	frappe.db.set_value("Account", account.name, "custom_xero_tax_type", tax_type)
 
-	report_tax_type = _resolve_response_report_tax_type(
-		xero_tax, payload, client, tax_type, account=account
-	)
+	report_tax_type = _resolve_response_report_tax_type(xero_tax, payload, client, tax_type, account=account)
 	if report_tax_type and frappe.db.has_column("Account", "custom_xero_report_tax_type"):
 		frappe.db.set_value(
 			"Account",
