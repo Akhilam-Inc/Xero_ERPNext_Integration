@@ -203,3 +203,34 @@ class TestMakeRequest(FrappeTestCase):
 
 			client = XeroAPIClient()
 			self.assertRaises(Exception, client.make_request, "GET", "/Invoices")
+
+	def test_400_validation_error_surfaces_xero_message_not_auth_hint(self):
+		mock_settings = _mock_settings()
+		mock_response = MagicMock()
+		mock_response.status_code = 400
+		mock_response.text = (
+			'{"Type":"ValidationException","Title":"Bad Request","Detail":"Account code invalid"}'
+		)
+		mock_response.json.return_value = {
+			"Type": "ValidationException",
+			"Title": "Bad Request",
+			"Detail": "Account code invalid",
+		}
+
+		with (
+			patch(SETTINGS_PATH, return_value=mock_settings),
+			patch(REQUESTS_POST, return_value=mock_response),
+			patch(
+				"xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._ensure_valid_token"
+			),
+			patch("xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_request"),
+			patch("xero_erpnext_integration.xero_erpnext_integration.apis.base.XeroAPIClient._log_response"),
+		):
+			from xero_erpnext_integration.xero_erpnext_integration.apis.base import XeroAPIClient
+
+			client = XeroAPIClient()
+			with self.assertRaises(frappe.ValidationError) as ctx:
+				client.make_request("POST", "/Invoices", data={"Invoices": []})
+
+		self.assertIn("Account code invalid", str(ctx.exception))
+		self.assertNotIn("accounting.settings", str(ctx.exception))

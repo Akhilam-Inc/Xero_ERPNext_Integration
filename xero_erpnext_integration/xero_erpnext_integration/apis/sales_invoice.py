@@ -20,6 +20,62 @@ def _account_xero_tax_type(account_head):
 	return frappe.db.get_value("Account", account_head, "custom_xero_tax_type")
 
 
+def _erpnext_account_to_xero_code(account_name: str | None) -> str | None:
+	"""Map an ERPNext Account name to a Xero account code (number or custom field)."""
+	if not account_name:
+		return None
+	if frappe.db.has_column("Account", "account_number"):
+		code = frappe.db.get_value("Account", account_name, "account_number")
+		if code:
+			return str(code).strip()
+	if frappe.db.has_column("Account", "custom_account_code"):
+		code = frappe.db.get_value("Account", account_name, "custom_account_code")
+		if code:
+			return str(code).strip()
+	return None
+
+
+def _resolve_xero_account_code(item, invoice) -> str | None:
+	"""Resolve the Xero AccountCode for an invoice line.
+
+	Priority:
+	1. Line-level custom_account_code (if present on the item row)
+	2. Item income account (row or Item Default)
+	3. Xero Settings `default_account_code`
+	"""
+	custom = (
+		item.get("custom_account_code")
+		if hasattr(item, "get")
+		else getattr(item, "custom_account_code", None)
+	)
+	if custom:
+		return str(custom).strip()
+
+	income_account = (
+		item.get("income_account") if hasattr(item, "get") else getattr(item, "income_account", None)
+	)
+	code = _erpnext_account_to_xero_code(income_account)
+	if code:
+		return code
+
+	item_code = item.get("item_code") if hasattr(item, "get") else getattr(item, "item_code", None)
+	if item_code:
+		default_income = frappe.db.get_value(
+			"Item Default",
+			{"parent": item_code, "parenttype": "Item", "company": invoice.company},
+			"income_account",
+		)
+		code = _erpnext_account_to_xero_code(default_income)
+		if code:
+			return code
+
+	settings_code = frappe.db.get_single_value("Xero Settings", "default_account_code")
+	if settings_code:
+		return str(settings_code).strip()
+
+	return None
+
+
 def get_line_tax_type(item, invoice):
 	"""Pick the Xero TaxType for a single Sales Invoice / Sales Return line.
 
@@ -45,6 +101,10 @@ def get_line_tax_type(item, invoice):
 		tt = _account_xero_tax_type(tax.get("account_head") if hasattr(tax, "get") else tax.account_head)
 		if tt:
 			return tt
+
+	default_tt = frappe.db.get_single_value("Xero Settings", "default_tax_type")
+	if default_tt:
+		return default_tt
 
 	return "NONE"
 
@@ -77,11 +137,20 @@ def build_xero_line_item(item, invoice, line_amount_types="Exclusive", item_code
 	ItemCode is only set when the item exists in Xero (see `ensure_xero_items_for_lines`).
 	Includes a resolved TaxType so Xero can calculate tax on the line.
 	"""
+	account_code = _resolve_xero_account_code(item, invoice)
+	if not account_code:
+		frappe.throw(
+			_(
+				"Could not resolve a Xero Account Code for item {0}. "
+				"Set income account on the line/item, or configure Default Account Code in Xero Settings."
+			).format(item.get("item_code") or item.item_name or item.name)
+		)
+
 	line_item = {
 		"Description": item.description or item.item_name,
 		"Quantity": str(flt(item.qty)),
 		"UnitAmount": str(flt(item.rate)),
-		"AccountCode": item.get("custom_account_code") or "200",
+		"AccountCode": account_code,
 	}
 
 	xero_item_code = resolve_line_item_code(item, item_code_map)
@@ -100,7 +169,7 @@ def build_xero_line_item(item, invoice, line_amount_types="Exclusive", item_code
 
 
 @frappe.whitelist()
-def sync_selected_invoices(invoices):
+def sync_selected_invoices(invoices: str):
 	"""
 	Bulk sync selected Sales Invoices to Xero.
 
@@ -111,16 +180,35 @@ def sync_selected_invoices(invoices):
 	"""
 	invoice_names = frappe.parse_json(invoices) or []
 	if not isinstance(invoice_names, list):
-		frappe.throw("Invalid invoices payload")
+		frappe.throw(_("Invalid invoices payload"))
+
+	invoice_names = [name for name in invoice_names if name]
+	if not invoice_names:
+		return {"created": [], "skipped": [], "failed": []}
+
+	rows = frappe.get_all(
+		"Sales Invoice",
+		filters={"name": ["in", invoice_names]},
+		fields=[
+			"name",
+			"docstatus",
+			"custom_do_not_sync_to_xero",
+			"is_return",
+			"custom_xero_invoice_number",
+		],
+		limit=len(invoice_names),
+	)
+	by_name = {row.name: row for row in rows}
 
 	results = {"created": [], "skipped": [], "failed": []}
+	invoice_updates: dict[str, dict] = {}
 
 	for name in invoice_names:
 		try:
-			if not name:
+			si = by_name.get(name)
+			if not si:
+				results["failed"].append({"name": name, "error": _("Sales Invoice not found")})
 				continue
-
-			si = frappe.get_doc("Sales Invoice", name)
 
 			# Only sync submitted invoices
 			if si.docstatus != 1:
@@ -153,12 +241,15 @@ def sync_selected_invoices(invoices):
 			xero_invoice = res.get("data") or {}
 			xero_id = xero_invoice.get("InvoiceID")
 			if xero_id:
-				frappe.db.set_value("Sales Invoice", si.name, "custom_xero_invoice_number", xero_id)
+				invoice_updates[si.name] = {"custom_xero_invoice_number": xero_id}
 
 			results["created"].append({"name": si.name, "xero_invoice_id": xero_id})
 
 		except Exception as e:
 			results["failed"].append({"name": name, "error": str(e)})
+
+	if invoice_updates:
+		frappe.db.bulk_update("Sales Invoice", invoice_updates)
 
 	return results
 

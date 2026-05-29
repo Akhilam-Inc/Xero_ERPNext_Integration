@@ -1,4 +1,35 @@
 frappe.listview_settings["Sales Invoice"] = {
+	add_fields: [
+		"status",
+		"workflow_state",
+		"docstatus",
+		"is_return",
+		"custom_xero_invoice_number",
+		"custom_xero_credit_note_id",
+		"custom_do_not_sync_to_xero",
+	],
+
+	get_indicator(doc) {
+		// Mirrors the form-view indicator: "<status> - <Xero workflow state>".
+		const is_synced = !!(
+			doc.custom_xero_invoice_number ||
+			doc.custom_xero_credit_note_id ||
+			doc.workflow_state === "Synced to Xero"
+		);
+
+		if (is_synced) {
+			return [
+				doc.status + " - " + __("Synced to Xero"),
+				"green",
+				"workflow_state,=,Synced to Xero|custom_xero_invoice_number,is,set|custom_xero_credit_note_id,is,set",
+			];
+		}
+		if (doc.workflow_state === "Submitted" || doc.docstatus === 1) {
+			return [doc.status + " - " + __("Submitted"), "blue", "workflow_state,=,Submitted"];
+		}
+		return [doc.status + " - " + __("Draft"), "red", "workflow_state,=,Draft"];
+	},
+
 	onload(listview) {
 		listview.page.add_inner_button(
 			__("Sync selected to Xero"),

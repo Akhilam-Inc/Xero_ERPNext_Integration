@@ -167,6 +167,10 @@ class TestCreateInvoice(FrappeTestCase):
 			patch("frappe.get_doc", return_value=mock_invoice),
 			patch("frappe.get_single", return_value=mock_settings),
 			patch("frappe.get_cached_value", return_value="USD"),
+			patch(
+				"frappe.db.get_single_value",
+				side_effect=lambda dt, field: "200" if field == "default_account_code" else None,
+			),
 		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import create_invoice
 
@@ -195,6 +199,10 @@ class TestCreateInvoice(FrappeTestCase):
 			patch("frappe.get_doc", return_value=mock_invoice),
 			patch("frappe.get_single", return_value=mock_settings),
 			patch("frappe.get_cached_value", return_value="USD"),
+			patch(
+				"frappe.db.get_single_value",
+				side_effect=lambda dt, field: "200" if field == "default_account_code" else None,
+			),
 		):
 			from xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice import create_invoice
 

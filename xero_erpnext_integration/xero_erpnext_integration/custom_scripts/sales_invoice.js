@@ -13,7 +13,17 @@ frappe.ui.form.on("Sales Invoice", {
 			frm.doc.custom_contact_id &&
 			!frm.doc.custom_do_not_sync_to_xero
 		) {
-			sync_to_xero_workflow_action(frm, false);
+			if (frm.doc.is_return) {
+				sync_return_to_xero_workflow_action(frm, false);
+			} else {
+				sync_to_xero_workflow_action(frm, false);
+			}
+		} else if (
+			frm.doc.workflow_state === "Synced to Xero" &&
+			frm.doc.is_return &&
+			frm.doc.custom_xero_credit_note_id
+		) {
+			sync_return_to_xero_workflow_action(frm, true);
 		} else if (
 			frm.doc.workflow_state === "Synced to Xero" &&
 			frm.doc.custom_xero_invoice_number
@@ -156,27 +166,40 @@ function create_invoice_in_xero(frm) {
 }
 
 function set_status_indicator(frm) {
-	// R43: template literals evaluated before __() lookup — translate static parts only
-	const statusConfig = {
-		Draft: {
-			color: "red",
-			label: frm.doc.status + " - " + __("Draft"),
-		},
-		Submitted: {
-			color: "blue",
-			label: frm.doc.status + " - " + __("Submitted"),
-		},
-		"Synced to Xero": {
-			color: "green",
-			label: frm.doc.status + " - " + __("Synced to Xero"),
-		},
-	};
-	if (frm.doc.workflow_state) {
-		frm.page.set_indicator(
-			statusConfig[frm.doc.workflow_state].label,
-			statusConfig[frm.doc.workflow_state].color
-		);
+	const indicator = get_xero_status_indicator(frm.doc);
+	if (indicator) {
+		frm.page.set_indicator(indicator.label, indicator.color);
 	}
+}
+
+function get_xero_status_indicator(doc) {
+	// Keep this in sync with sales_invoice_list.js get_indicator.
+	if (!doc || !doc.status) {
+		return null;
+	}
+
+	const is_synced = !!(
+		doc.custom_xero_invoice_number ||
+		doc.custom_xero_credit_note_id ||
+		doc.workflow_state === "Synced to Xero"
+	);
+
+	if (is_synced) {
+		return {
+			color: "green",
+			label: doc.status + " - " + __("Synced to Xero"),
+		};
+	}
+	if (doc.workflow_state === "Submitted" || doc.docstatus === 1) {
+		return {
+			color: "blue",
+			label: doc.status + " - " + __("Submitted"),
+		};
+	}
+	return {
+		color: "red",
+		label: doc.status + " - " + __("Draft"),
+	};
 }
 
 function toggle_xero_sync(frm, disable) {
@@ -343,6 +366,29 @@ function create_contact_in_xero(frm, contact_person) {
 				frm.reload_doc(); // R25: use frm param, not deprecated cur_frm
 			} else {
 				frappe.msgprint(__("Failed to create contact in Xero"));
+			}
+		},
+	});
+}
+
+function sync_return_to_xero_workflow_action(frm, update_credit_note = false) {
+	const doc = frm.doc;
+	frappe.call({
+		method: "xero_erpnext_integration.xero_erpnext_integration.apis.credit_note.create_credit_note",
+		args: {
+			sales_return: doc.name,
+			update: update_credit_note,
+		},
+		callback: function (r) {
+			if (r.message && r.message.status === "success") {
+				frappe.msgprint(
+					update_credit_note
+						? __("Credit Note updated successfully in Xero")
+						: __("Credit Note synced successfully to Xero")
+				);
+				frm.reload_doc();
+			} else {
+				frappe.msgprint(__("Failed to sync credit note to Xero"));
 			}
 		},
 	});
