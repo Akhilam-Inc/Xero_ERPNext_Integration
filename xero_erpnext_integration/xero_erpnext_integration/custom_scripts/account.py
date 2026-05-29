@@ -92,7 +92,7 @@ def on_update(doc, method=None):
 		parts.append(_("TaxType: {0}").format(tax_type))
 	if report_tax_type:
 		parts.append(_("Report Tax Type: {0}").format(report_tax_type))
-	suffix = " ({0})".format(", ".join(parts)) if parts else ""
+	suffix = f" ({', '.join(parts)})" if parts else ""
 
 	frappe.msgprint(
 		_("Account synced successfully to Xero") + suffix,
