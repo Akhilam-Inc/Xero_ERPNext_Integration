@@ -8,16 +8,11 @@ exist in the Xero Items list. This module creates missing items automatically
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import frappe
 from frappe import _
 from frappe.utils import flt
 
 from .base import get_xero_client
-
-if TYPE_CHECKING:
-	from .base import XeroAPIClient
 
 
 def _xero_item_code(item_code: str) -> str:
@@ -98,7 +93,7 @@ def _save_item_mapping(item_code: str, xero_code: str):
 
 
 @frappe.whitelist()
-def ensure_xero_item(item_code: str, client: XeroAPIClient | None = None) -> str | None:
+def ensure_xero_item(item_code: str, client=None) -> str | None:
 	"""
 	Ensure a single ERPNext Item exists in Xero.
 

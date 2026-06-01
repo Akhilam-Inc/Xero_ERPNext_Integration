@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import frappe
-from frappe import _
 from frappe.utils import flt
 
 from .base import get_xero_client
@@ -21,7 +20,7 @@ def _as_xero_date_string(d) -> str | None:
 
 def _xero_where_updated_since(hours: int) -> str:
 	# Xero query format: UpdatedDateUTC>=DateTime(2026,05,08,10,00,00)
-	dt = datetime.now(UTC) - timedelta(hours=hours)
+	dt = datetime.now(timezone.utc) - timedelta(hours=hours)
 	return f"UpdatedDateUTC>=DateTime({dt.year},{dt.month:02d},{dt.day:02d},{dt.hour:02d},{dt.minute:02d},{dt.second:02d})"
 
 
@@ -35,15 +34,15 @@ def create_credit_note(sales_return: str, update: bool = False):
 	sr = frappe.get_doc("Sales Invoice", sales_return)
 
 	if sr.docstatus != 1:
-		frappe.throw(_("Sales Return must be submitted before syncing to Xero."))
+		frappe.throw("Sales Return must be submitted before syncing to Xero.")
 	if not getattr(sr, "is_return", 0):
-		frappe.throw(_("Selected Sales Invoice is not a return (is_return=1)."))
+		frappe.throw("Selected Sales Invoice is not a return (is_return=1).")
 	if getattr(sr, "custom_do_not_sync_to_xero", 0):
-		frappe.throw(_("Xero sync is disabled for this Sales Return."))
+		frappe.throw("Xero sync is disabled for this Sales Return.")
 
 	contact_id = get_customer_contact_id(sr.customer)
 	if not contact_id:
-		frappe.throw(_("No Xero contact ID found for customer: {0}").format(sr.customer))
+		frappe.throw(f"No Xero contact ID found for customer: {sr.customer}")
 
 	# Decide LineAmountTypes once for the document, based on the return's taxes
 	line_amount_types = get_line_amount_types(sr)
@@ -65,7 +64,7 @@ def create_credit_note(sales_return: str, update: bool = False):
 		line_items.append(line_item)
 
 	if not line_items:
-		frappe.throw(_("Sales Return must have at least one item with non-zero quantity."))
+		frappe.throw("Sales Return must have at least one item with non-zero quantity.")
 
 	credit_note_data = {
 		"Type": "ACCRECCREDIT",
@@ -137,7 +136,7 @@ def push_pending_sales_returns(limit: int = 50):
 
 
 @frappe.whitelist()
-def sync_selected_sales_returns(invoices: str):
+def sync_selected_sales_returns(invoices):
 	"""
 	Bulk sync selected ERPNext Sales Returns to Xero as Credit Notes.
 
@@ -149,56 +148,54 @@ def sync_selected_sales_returns(invoices: str):
 	"""
 	invoice_names = frappe.parse_json(invoices) or []
 	if not isinstance(invoice_names, list):
-		frappe.throw(_("Invalid invoices payload"))
+		frappe.throw("Invalid invoices payload")
 
-	invoice_names = [name for name in invoice_names if name]
-	if not invoice_names:
-		return {"created": [], "skipped": [], "failed": []}
-
-	rows = frappe.get_all(
-		"Sales Invoice",
-		filters={"name": ["in", invoice_names]},
-		fields=[
-			"name",
-			"docstatus",
-			"is_return",
-			"custom_do_not_sync_to_xero",
-			"custom_xero_credit_note_id",
-		],
-		limit=len(invoice_names),
-	)
-	by_name = {row.name: row for row in rows}
-
+	valid_names = [n for n in invoice_names if n]
 	results = {"created": [], "skipped": [], "failed": []}
 
-	for name in invoice_names:
+	if not valid_names:
+		return results
+
+	# Batch-fetch all screening fields in one query — avoids N+1 (AKH-02)
+	sr_rows = frappe.get_all(
+		"Sales Invoice",
+		filters=[["name", "in", valid_names]],
+		fields=["name", "docstatus", "is_return", "custom_do_not_sync_to_xero", "custom_xero_credit_note_id"],
+	)
+	sr_map = {row.name: row for row in sr_rows}
+
+	for name in valid_names:
 		try:
-			sr = by_name.get(name)
+			sr = sr_map.get(name)
 			if not sr:
-				results["failed"].append({"name": name, "error": _("Sales Invoice not found")})
-				continue
-			if sr.docstatus != 1:
-				results["skipped"].append({"name": sr.name, "reason": "Not submitted"})
-				continue
-			if not getattr(sr, "is_return", 0):
-				results["skipped"].append({"name": sr.name, "reason": "Not a return"})
-				continue
-			if getattr(sr, "custom_do_not_sync_to_xero", 0):
-				results["skipped"].append({"name": sr.name, "reason": "Xero sync disabled"})
-				continue
-			if getattr(sr, "custom_xero_credit_note_id", None):
-				results["skipped"].append({"name": sr.name, "reason": "Already synced"})
+				results["failed"].append({"name": name, "error": "Sales Return not found"})
 				continue
 
-			res = create_credit_note(sr.name, update=False)
+			if sr.docstatus != 1:
+				results["skipped"].append({"name": name, "reason": "Not submitted"})
+				continue
+			if not sr.is_return:
+				results["skipped"].append({"name": name, "reason": "Not a return"})
+				continue
+			if sr.custom_do_not_sync_to_xero:
+				results["skipped"].append({"name": name, "reason": "Xero sync disabled"})
+				continue
+			if sr.custom_xero_credit_note_id:
+				results["skipped"].append({"name": name, "reason": "Already synced"})
+				continue
+
+			# create_credit_note loads the full doc internally (needs items, taxes, etc.)
+			res = create_credit_note(name, update=False)
 			if not res or res.get("status") != "success":
 				results["failed"].append(
-					{"name": sr.name, "error": (res or {}).get("message") or "Unknown error"}
+					{"name": name, "error": (res or {}).get("message") or "Unknown error"}
 				)
 				continue
 
 			cn = res.get("data") or {}
-			results["created"].append({"name": sr.name, "xero_credit_note_id": cn.get("CreditNoteID")})
+			results["created"].append(
+				{"name": name, "xero_credit_note_id": cn.get("CreditNoteID")}
+			)
 
 		except Exception as e:
 			results["failed"].append({"name": name, "error": str(e)})
@@ -237,16 +234,16 @@ def pull_updated_credit_notes(hours: int = 2, limit: int = 100):
 
 	out = {"created": [], "skipped": [], "failed": []}
 
-	cn_ids = [cn.get("CreditNoteID") for cn in credit_notes if cn.get("CreditNoteID")]
-	existing_by_cn_id = {}
-	if cn_ids:
-		for row in frappe.get_all(
+	# Batch-fetch all already-imported credit note IDs in one query — avoids N+1 (AKH-02)
+	all_cn_ids = [cn.get("CreditNoteID") for cn in credit_notes if cn.get("CreditNoteID")]
+	already_imported: dict[str, str] = {}
+	if all_cn_ids:
+		existing_rows = frappe.get_all(
 			"Sales Invoice",
-			filters={"custom_xero_credit_note_id": ["in", cn_ids]},
+			filters=[["custom_xero_credit_note_id", "in", all_cn_ids]],
 			fields=["name", "custom_xero_credit_note_id"],
-			limit=len(cn_ids),
-		):
-			existing_by_cn_id[row.custom_xero_credit_note_id] = row.name
+		)
+		already_imported = {row.custom_xero_credit_note_id: row.name for row in existing_rows}
 
 	for cn in credit_notes:
 		try:
@@ -254,11 +251,13 @@ def pull_updated_credit_notes(hours: int = 2, limit: int = 100):
 			if not cn_id:
 				continue
 
-			existing = existing_by_cn_id.get(cn_id)
-			if existing:
-				out["skipped"].append(
-					{"xero_credit_note_id": cn_id, "reason": "Already imported", "sales_return": existing}
-				)
+			# already imported?
+			if cn_id in already_imported:
+				out["skipped"].append({
+					"xero_credit_note_id": cn_id,
+					"reason": "Already imported",
+					"sales_return": already_imported[cn_id],
+				})
 				continue
 
 			xero_invoice_id = _get_allocation_invoice_id(cn)

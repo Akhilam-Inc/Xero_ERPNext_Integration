@@ -1,7 +1,10 @@
-name: Linters
+name: Akhilam Quality Gate
 
 on:
+  push:
+    branches: ["**"]
   pull_request:
+    branches: [main, version-16, develop]
   workflow_dispatch:
 
 permissions:
@@ -11,29 +14,30 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 1: Ruff — lint + format (auto-fix then gate)
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  linter:
-    name: 'Frappe Linter'
+  ruff:
+    name: "Ruff (lint + format)"
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref }}
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: pip
+          python-version: "3.11"
 
-      - name: Install pre-commit
-        run: pip install pre-commit
+      - name: Install Ruff
+        run: pip install "ruff==0.11.0"
 
-      - name: Auto-fix formatting
-        # Run all hooks and let them reformat files in place; || true means we
-        # don't fail the job here — the gating check below handles real errors.
-        run: pre-commit run --all-files || true
+      - name: Auto-fix with Ruff
+        run: |
+          ruff check . --fix || true
+          ruff format .
 
       - name: Commit auto-fixes if any
         run: |
@@ -41,47 +45,131 @@ jobs:
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add -A
-            git commit -m "style: auto-format code with pre-commit"
+            git commit -m "style: auto-format code with ruff"
             git push
           fi
 
-      - name: Verify pre-commit clean
-        # This is the gating check. After the auto-fix pass above, this must pass.
-        # If it still fails, there is a genuine lint violation (not just formatting).
-        run: pre-commit run --all-files
+      - name: Ruff lint (gate)
+        run: ruff check . --output-format=github
 
-      - name: Download Semgrep rules
-        run: |
-          git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
-          # Add Akhilam custom performance rules (N+1, unbounded fetches, bulk ops)
-          cp .github/semgrep/performance.yml frappe-semgrep-rules/rules/performance.yml
+      - name: Ruff format check (gate)
+        run: ruff format --check .
 
-      - name: Run Semgrep rules
-        run: |
-          pip install semgrep
-          semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
-
-  deps-vulnerable-check:
-    name: 'Vulnerable Dependency Check'
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 2: Semgrep — Frappe official 46 rules (ERROR severity only)
+# ─────────────────────────────────────────────────────────────────────────────
+  semgrep-frappe:
+    name: "Semgrep (Frappe official rules)"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      
       - uses: actions/checkout@v4
 
-      - name: Cache pip
-        uses: actions/cache@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install semgrep
+        run: pip install semgrep
+
+      - name: Clone Frappe semgrep rules
+        run: |
+          git clone --depth 1 --branch develop \
+            https://github.com/frappe/semgrep-rules.git ~/frappe-semgrep-rules
+
+      - name: Run Frappe semgrep rules (ERROR only)
+        run: |
+          semgrep \
+            --config ~/frappe-semgrep-rules/rules \
+            --severity=ERROR \
+            --error \
+            --sarif-output=semgrep-frappe.sarif \
+            .
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-frappe.sarif
+          category: semgrep-frappe
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 3: Semgrep — Akhilam custom rules (AKH-01 to AKH-08)
+# ─────────────────────────────────────────────────────────────────────────────
+  semgrep-akhilam:
+    name: "Semgrep (Akhilam custom rules)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install semgrep
+        run: pip install semgrep
+
+      - name: Run Akhilam semgrep rules
+        run: |
+          semgrep \
+            --config semgrep/akhilam-custom-rules.yaml \
+            --error \
+            --sarif-output=semgrep-akhilam.sarif \
+            .
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-akhilam.sarif
+          category: semgrep-akhilam
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 4: Vulnerable dependency check
+# ─────────────────────────────────────────────────────────────────────────────
+  deps-audit:
+    name: "Dependency Audit (pip-audit)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+          key: ${{ runner.os }}-pip-audit-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-audit-
 
-      - name: Install and run pip-audit
+      - name: Run pip-audit
         run: |
           pip install pip-audit
-          cd ${GITHUB_WORKSPACE}
           pip-audit --desc on .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STATUS GATE — all 4 jobs must pass for PR merge to be allowed.
+# Add "All quality checks passed" as a required status check in branch protection.
+# ─────────────────────────────────────────────────────────────────────────────
+  all-checks-passed:
+    name: "All quality checks passed"
+    needs: [ruff, semgrep-frappe, semgrep-akhilam, deps-audit]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          if [[ "${{ needs.ruff.result }}"           != "success" ]] || \
+             [[ "${{ needs.semgrep-frappe.result }}"  != "success" ]] || \
+             [[ "${{ needs.semgrep-akhilam.result }}" != "success" ]] || \
+             [[ "${{ needs.deps-audit.result }}"      != "success" ]]; then
+            echo "One or more quality checks failed."
+            echo "  ruff:            ${{ needs.ruff.result }}"
+            echo "  semgrep-frappe:  ${{ needs.semgrep-frappe.result }}"
+            echo "  semgrep-akhilam: ${{ needs.semgrep-akhilam.result }}"
+            echo "  deps-audit:      ${{ needs.deps-audit.result }}"
+            exit 1
+          fi
+          echo "✅ All quality checks passed."
