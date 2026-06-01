@@ -5,12 +5,12 @@ on:
     branches:
       - develop
       - main
-      - version-16
+      - v-16
   pull_request:
     branches:
       - develop
       - main
-      - version-16
+      - v-16
 
 concurrency:
   group: develop-xero_erpnext_integration-${{ github.event.number }}
