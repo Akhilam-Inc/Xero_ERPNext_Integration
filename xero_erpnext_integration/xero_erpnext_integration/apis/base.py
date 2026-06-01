@@ -21,7 +21,7 @@ class SupportedHTTPMethod(Enum):
 
 # Scopes required for invoices, contacts, and tax rates (/TaxRates needs accounting.settings).
 XERO_DEFAULT_SCOPE = (
-	"openid profile email offline_access " "accounting.transactions accounting.contacts accounting.settings"
+	"openid profile email offline_access accounting.transactions accounting.contacts accounting.settings"
 )
 
 
