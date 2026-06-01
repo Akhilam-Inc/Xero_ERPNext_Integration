@@ -152,6 +152,7 @@ def _pick_report_tax_type_from_rates(account, xero_rates: list[dict]) -> str | N
 	candidates.sort(key=lambda item: item[0])
 	return candidates[0][1]
 
+
 def _resolve_report_tax_type(account) -> str:
 	"""Pick the Xero ReportTaxType for an Account.
 
