@@ -70,7 +70,7 @@ jobs:
             --sarif-output=semgrep-frappe.sarif .
       - name: Upload SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep-frappe.sarif
           category: semgrep-frappe
@@ -92,7 +92,7 @@ jobs:
             --error --sarif-output=semgrep-akhilam.sarif .
       - name: Upload SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep-akhilam.sarif
           category: semgrep-akhilam
