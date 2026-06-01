@@ -7,31 +7,39 @@ frappe.ui.form.on("Sales Invoice", {
 		}
 	},
 
-	before_workflow_action: async (frm) => {
+	before_workflow_action: async function (frm) {
 		if (
 			frm.doc.workflow_state === "Draft" &&
 			frm.doc.custom_contact_id &&
 			!frm.doc.custom_do_not_sync_to_xero
 		) {
-			if (frm.doc.is_return) {
-				sync_return_to_xero_workflow_action(frm, false);
-			} else {
-				sync_to_xero_workflow_action(frm, false);
-			}
+			return new Promise(function (resolve, reject) {
+				frappe.dom.unfreeze();
+				if (frm.doc.is_return) {
+					sync_return_to_xero_workflow_action(frm, false, resolve, reject);
+				} else {
+					sync_to_xero_workflow_action(frm, false, resolve, reject);
+				}
+			});
 		} else if (
 			frm.doc.workflow_state === "Synced to Xero" &&
 			frm.doc.is_return &&
 			frm.doc.custom_xero_credit_note_id
 		) {
-			sync_return_to_xero_workflow_action(frm, true);
+			return new Promise(function (resolve, reject) {
+				frappe.dom.unfreeze();
+				sync_return_to_xero_workflow_action(frm, true, resolve, reject);
+			});
 		} else if (
 			frm.doc.workflow_state === "Synced to Xero" &&
 			frm.doc.custom_xero_invoice_number
 		) {
-			sync_to_xero_workflow_action(frm, true);
+			return new Promise(function (resolve, reject) {
+				frappe.dom.unfreeze();
+				sync_to_xero_workflow_action(frm, true, resolve, reject);
+			});
 		}
 	},
-
 	after_workflow_action: async (frm) => {
 		if (
 			!frm.doc.custom_contact_id &&
@@ -117,7 +125,7 @@ function add_xero_buttons(frm) {
 }
 
 function add_status_button(frm, label, color) {
-	frm.add_custom_button(__(label), function () {})
+	frm.add_custom_button(__(label), function () { })
 		.css("background-color", color)
 		.css("color", "white");
 }
@@ -274,9 +282,8 @@ function show_contact_mapping_dialog(frm, xero_contacts, contact_person) {
             <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px;">
                 <div><strong>${contact.Name || ""}</strong></div>
                 <div>Email: ${contact.EmailAddress || "-"}</div>
-                <div>Phone: ${
-					contact.Phones && contact.Phones[0] ? contact.Phones[0].PhoneNumber : "-"
-				}</div>
+                <div>Phone: ${contact.Phones && contact.Phones[0] ? contact.Phones[0].PhoneNumber : "-"
+			}</div>
                 <button class="btn btn-primary btn-sm map-contact-btn"
                         data-contact-id="${contact.ContactID}"
                         data-contact-person="${frm.doc.contact_person}"
@@ -371,14 +378,11 @@ function create_contact_in_xero(frm, contact_person) {
 	});
 }
 
-function sync_return_to_xero_workflow_action(frm, update_credit_note = false) {
+function sync_return_to_xero_workflow_action(frm, update_credit_note = false, resolve = null, reject = null) {
 	const doc = frm.doc;
 	frappe.call({
 		method: "xero_erpnext_integration.xero_erpnext_integration.apis.credit_note.create_credit_note",
-		args: {
-			sales_return: doc.name,
-			update: update_credit_note,
-		},
+		args: { sales_return: doc.name, update: update_credit_note },
 		callback: function (r) {
 			if (r.message && r.message.status === "success") {
 				frappe.msgprint(
@@ -387,43 +391,49 @@ function sync_return_to_xero_workflow_action(frm, update_credit_note = false) {
 						: __("Credit Note synced successfully to Xero")
 				);
 				frm.reload_doc();
+				resolve && resolve();
 			} else {
-				frappe.msgprint(__("Failed to sync credit note to Xero"));
+				frappe.msgprint({ title: __("Xero Sync Failed"), message: __("Failed to sync credit note to Xero."), indicator: "red" });
+				reject && reject();
 			}
 		},
+		error_callback: function () {
+			frappe.msgprint({ title: __("Xero Sync Failed"), message: __("Failed to communicate with Xero."), indicator: "red" });
+			reject && reject();
+		}
 	});
 }
-
-function sync_to_xero_workflow_action(frm, update_invoice = false) {
-	// R25: accept frm (not doc) so reload_doc() can be called without cur_frm
+function sync_to_xero_workflow_action(frm, update_invoice = false, resolve = null, reject = null) {
 	const doc = frm.doc;
 	frappe.call({
 		method: "xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.create_invoice",
-		args: {
-			doc: doc.name,
-			update: update_invoice,
-		},
+		args: { doc: doc.name, update: update_invoice },
 		callback: function (r) {
-			if (r.message) {
-				if (r.message.status === "success" && !doc.custom_xero_invoice_number) {
-					// Update the Xero invoice number then reload
+			if (r.message && r.message.status === "success") {
+				if (!doc.custom_xero_invoice_number) {
 					frappe.db.set_value(
-						"Sales Invoice",
-						doc.name,
-						"custom_xero_invoice_number",
-						r.message.data.InvoiceID,
+						"Sales Invoice", doc.name,
+						"custom_xero_invoice_number", r.message.data.InvoiceID,
 						function () {
 							frappe.msgprint(__("Invoice synced successfully to Xero"));
 							frm.reload_doc();
+							resolve && resolve();
 						}
 					);
-				} else if (r.message.status === "success" && doc.custom_xero_invoice_number) {
+				} else {
 					frappe.msgprint(__("Invoice Updated successfully in Xero"));
 					frm.reload_doc();
-				} else {
-					frappe.msgprint(__("Failed to sync invoice to Xero"));
+					resolve && resolve();
 				}
+			} else {
+				const msg = (r.message && r.message.message) || "Failed to sync invoice to Xero";
+				frappe.msgprint({ title: __("Xero Sync Failed"), message: __(msg), indicator: "red" });
+				reject && reject();
 			}
 		},
+		error_callback: function () {
+			frappe.msgprint({ title: __("Xero Sync Failed"), message: __("Failed to communicate with Xero."), indicator: "red" });
+			reject && reject();
+		}
 	});
 }
