@@ -1,53 +1,3 @@
-function clear_xero_dashboard_indicators(frm) {
-	if (!frm.dashboard?.stats_area_row) {
-		return;
-	}
-	frm.dashboard.stats_area_row.find(".indicator-column").each(function () {
-		const text = $(this).find(".indicator").text() || "";
-		if (text.includes("Xero TaxType") || text.includes("Xero Report Tax Type")) {
-			$(this).remove();
-		}
-	});
-}
-
-function render_xero_dashboard_indicators(frm) {
-	if (frm.doc.account_type !== "Tax" || !frm.dashboard) {
-		return;
-	}
-	clear_xero_dashboard_indicators(frm);
-	if (frm.doc.custom_xero_tax_type) {
-		frm.dashboard.add_indicator(
-			__("Xero TaxType: {0}", [frm.doc.custom_xero_tax_type]),
-			"green"
-		);
-	}
-	if (frm.doc.custom_xero_report_tax_type) {
-		frm.dashboard.add_indicator(
-			__("Xero Report Tax Type: {0}", [frm.doc.custom_xero_report_tax_type]),
-			"blue"
-		);
-	}
-}
-
-function refresh_xero_field_values(frm, result) {
-	if (!result) {
-		return;
-	}
-	const tax_type = result.tax_type || (result.data && result.data.TaxType);
-	const report_tax_type = result.report_tax_type || (result.data && result.data.ReportTaxType);
-
-	if (tax_type) {
-		frm.set_value("custom_xero_tax_type", tax_type);
-	}
-	if (report_tax_type) {
-		frm.set_value("custom_xero_report_tax_type", report_tax_type);
-	}
-	if (frm.doc.custom_send_to_xero !== 1) {
-		frm.set_value("custom_send_to_xero", 1);
-	}
-	render_xero_dashboard_indicators(frm);
-}
-
 frappe.ui.form.on("Account", {
 	refresh(frm) {
 		// Only Tax accounts are relevant for Xero TaxRate sync.
@@ -55,7 +5,13 @@ frappe.ui.form.on("Account", {
 			return;
 		}
 
-		render_xero_dashboard_indicators(frm);
+		// Show TaxType (read-only) once it's been set so users know the mapping.
+		if (frm.doc.custom_xero_tax_type) {
+			frm.dashboard.add_indicator(
+				__("Xero TaxType: {0}", [frm.doc.custom_xero_tax_type]),
+				"green"
+			);
+		}
 
 		// Manual sync button: only when sync is enabled and not yet mapped.
 		if (!frm.is_new() && frm.doc.custom_send_to_xero && !frm.doc.custom_xero_tax_type) {
@@ -69,14 +25,14 @@ frappe.ui.form.on("Account", {
 						freeze_message: __("Syncing Tax Rate to Xero..."),
 						callback: function (r) {
 							if (r.message && r.message.status === "success") {
-								refresh_xero_field_values(frm, r.message);
 								frappe.show_alert(
 									{
-										message: __("Account synced successfully to Xero"),
+										message: __("Tax Rate synced to Xero"),
 										indicator: "green",
 									},
 									8
 								);
+								frm.reload_doc();
 							}
 						},
 					});
@@ -106,14 +62,14 @@ frappe.ui.form.on("Account", {
 								freeze_message: __("Updating Tax Rate in Xero..."),
 								callback: function (r) {
 									if (r.message && r.message.status === "success") {
-										refresh_xero_field_values(frm, r.message);
 										frappe.show_alert(
 											{
-												message: __("Account synced successfully to Xero"),
+												message: __("Tax Rate updated in Xero"),
 												indicator: "green",
 											},
 											8
 										);
+										frm.reload_doc();
 									}
 								},
 							});

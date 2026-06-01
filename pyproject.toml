@@ -23,32 +23,44 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = [
-    "F",
-    "E",
-    "W",
-    "I",
-    "UP",
-    "B",
-    "RUF",
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "W",    # pycodestyle warnings
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "RUF",  # ruff-specific rules
 ]
 ignore = [
     "B017", # assertRaises(Exception) - should be more specific
     "B018", # useless expression, not assigned to anything
-    "B023", # function doesn't bind loop variable - will have last iteration's value
+    "B023", # function doesn't bind loop variable
     "B904", # raise inside except without from
     "E101", # indentation contains mixed spaces and tabs
     "E402", # module level import not at top of file
-    "E501", # line too long
+    "E501", # line too long — handled by formatter
     "E741", # ambiguous variable name
-    "F401", # "unused" imports
+    "F401", # unused imports
     "F403", # can't detect undefined names from * import
     "F405", # can't detect undefined names from * import
     "F722", # syntax error in forward type annotation
     "W191", # indentation contains tabs
+    "SIM108", # ternary — sometimes less readable
+    "UP007", # X | Y union — keep Optional[] for Frappe compat
 ]
 typing-modules = ["frappe.types.DF"]
+
+[tool.ruff.lint.per-file-ignores]
+"test_*.py" = ["E402", "F401"]    # test files: allow late imports
+"patches/*.py" = ["B007", "F841"] # patches: allow unused loop/local vars
+
+[tool.ruff.lint.isort]
+known-first-party = ["frappe", "erpnext", "xero_erpnext_integration"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "tab"
+line-ending = "lf"
 docstring-code-format = true

@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-
 from xero_erpnext_integration.xero_erpnext_integration.apis.tax_rate import (
 	_build_tax_rate_payload,
 	_pick_report_tax_type_from_rates,
