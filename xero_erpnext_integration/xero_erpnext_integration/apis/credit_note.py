@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import frappe
 from frappe.utils import flt
@@ -20,7 +20,7 @@ def _as_xero_date_string(d) -> str | None:
 
 def _xero_where_updated_since(hours: int) -> str:
 	# Xero query format: UpdatedDateUTC>=DateTime(2026,05,08,10,00,00)
-	dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+	dt = datetime.now(UTC) - timedelta(hours=hours)
 	return f"UpdatedDateUTC>=DateTime({dt.year},{dt.month:02d},{dt.day:02d},{dt.hour:02d},{dt.minute:02d},{dt.second:02d})"
 
 
@@ -193,9 +193,7 @@ def sync_selected_sales_returns(invoices):
 				continue
 
 			cn = res.get("data") or {}
-			results["created"].append(
-				{"name": name, "xero_credit_note_id": cn.get("CreditNoteID")}
-			)
+			results["created"].append({"name": name, "xero_credit_note_id": cn.get("CreditNoteID")})
 
 		except Exception as e:
 			results["failed"].append({"name": name, "error": str(e)})
@@ -253,11 +251,13 @@ def pull_updated_credit_notes(hours: int = 2, limit: int = 100):
 
 			# already imported?
 			if cn_id in already_imported:
-				out["skipped"].append({
-					"xero_credit_note_id": cn_id,
-					"reason": "Already imported",
-					"sales_return": already_imported[cn_id],
-				})
+				out["skipped"].append(
+					{
+						"xero_credit_note_id": cn_id,
+						"reason": "Already imported",
+						"sales_return": already_imported[cn_id],
+					}
+				)
 				continue
 
 			xero_invoice_id = _get_allocation_invoice_id(cn)
