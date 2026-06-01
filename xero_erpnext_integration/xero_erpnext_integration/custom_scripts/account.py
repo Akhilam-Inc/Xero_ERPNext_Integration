@@ -52,5 +52,5 @@ def on_update(doc, method=None):
 	except Exception as e:
 		frappe.log_error(
 			title="Xero Tax Rate Sync",
-			message=f"Failed to auto-sync Account {doc.name} to Xero: {str(e)}",
+			message=f"Failed to auto-sync Account {doc.name} to Xero: {e!s}",
 		)
