@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 from enum import Enum
 from urllib.parse import urlencode, urljoin
 
-import frappe
 import requests
+
+import frappe
 from frappe import _
 from frappe.utils.background_jobs import enqueue
 
@@ -20,7 +21,7 @@ class SupportedHTTPMethod(Enum):
 
 # Scopes required for invoices, contacts, and tax rates (/TaxRates needs accounting.settings).
 XERO_DEFAULT_SCOPE = (
-	"openid profile email offline_access " "accounting.transactions accounting.contacts accounting.settings"
+	"openid profile email offline_access accounting.transactions accounting.contacts accounting.settings"
 )
 
 
@@ -361,9 +362,8 @@ class XeroAPIClient:
 			if isinstance(expires_at, str):
 				expires_at = datetime.fromisoformat(expires_at)
 
-			if datetime.now() >= expires_at - timedelta(minutes=5):
-				if not self.refresh_access_token():
-					frappe.throw(_("Failed to refresh access token. Please re-authorize the application."))
+			if datetime.now() >= expires_at - timedelta(minutes=5) and not self.refresh_access_token():
+				frappe.throw(_("Failed to refresh access token. Please re-authorize the application."))
 
 	def _dispatch(self, method, url, headers, data, params):
 		"""Single HTTP dispatch point — avoids duplicating dispatch logic for retry."""
