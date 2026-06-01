@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-
 from xero_erpnext_integration.xero_erpnext_integration.tests.utils import insert_test_customer
 
 XERO_CLIENT_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.contact.get_xero_client"

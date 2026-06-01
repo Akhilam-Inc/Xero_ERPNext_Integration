@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, today
-
 from xero_erpnext_integration.xero_erpnext_integration.tests.utils import insert_test_customer
 
 XERO_CLIENT_PATH = "xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_xero_client"
