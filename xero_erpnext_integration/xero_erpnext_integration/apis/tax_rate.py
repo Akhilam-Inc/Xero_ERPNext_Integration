@@ -165,29 +165,40 @@ def sync_selected_tax_rates(accounts) -> dict:
 	if not isinstance(names, list):
 		frappe.throw(_("Invalid accounts payload"))
 
+	valid_names = [n for n in names if n]
 	results = {"created": [], "skipped": [], "failed": []}
 
-	for name in names:
-		if not name:
-			continue
+	if not valid_names:
+		return results
+
+	# Batch-fetch all screening fields in one query — avoids N+1 (AKH-02)
+	account_rows = frappe.get_all(
+		"Account",
+		filters=[["name", "in", valid_names]],
+		fields=["name", "account_type", "custom_xero_tax_type", "custom_send_to_xero"],
+	)
+	account_map = {row.name: row for row in account_rows}
+
+	for name in valid_names:
 		try:
-			account = frappe.get_doc("Account", name)
+			account = account_map.get(name)
+			if not account:
+				results["failed"].append({"name": name, "error": "Account not found"})
+				continue
+
 			if (account.account_type or "") != "Tax":
 				results["skipped"].append({"name": name, "reason": "Not a Tax account"})
 				continue
-			if account.get("custom_xero_tax_type"):
+			if account.custom_xero_tax_type:
 				results["skipped"].append(
-					{
-						"name": name,
-						"reason": f"Already synced (TaxType {account.custom_xero_tax_type})",
-					}
+					{"name": name, "reason": f"Already synced (TaxType {account.custom_xero_tax_type})"}
 				)
 				continue
 
+			# create_tax_rate loads the full doc internally (needs tax_rate, account_name, etc.)
 			res = create_tax_rate(name, update=False)
 			if res and res.get("status") == "success":
-				# Also flip the checkbox so the form reflects the synced state
-				if not account.get("custom_send_to_xero"):
+				if not account.custom_send_to_xero:
 					frappe.db.set_value("Account", name, "custom_send_to_xero", 1)
 				results["created"].append({"name": name, "tax_type": (res.get("data") or {}).get("TaxType")})
 			else:

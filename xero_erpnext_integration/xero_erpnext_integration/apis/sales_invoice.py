@@ -113,49 +113,62 @@ def sync_selected_invoices(invoices):
 	if not isinstance(invoice_names, list):
 		frappe.throw("Invalid invoices payload")
 
+	valid_names = [n for n in invoice_names if n]
 	results = {"created": [], "skipped": [], "failed": []}
 
-	for name in invoice_names:
-		try:
-			if not name:
-				continue
+	if not valid_names:
+		return results
 
-			si = frappe.get_doc("Sales Invoice", name)
+	# Batch-fetch all screening fields in one query — avoids N+1 (AKH-02)
+	invoice_rows = frappe.get_all(
+		"Sales Invoice",
+		filters=[["name", "in", valid_names]],
+		fields=["name", "docstatus", "is_return", "custom_do_not_sync_to_xero", "custom_xero_invoice_number"],
+	)
+	invoice_map = {row.name: row for row in invoice_rows}
+
+	for name in valid_names:
+		try:
+			si = invoice_map.get(name)
+			if not si:
+				results["failed"].append({"name": name, "error": "Invoice not found"})
+				continue
 
 			# Only sync submitted invoices
 			if si.docstatus != 1:
-				results["skipped"].append({"name": si.name, "reason": "Not submitted"})
+				results["skipped"].append({"name": name, "reason": "Not submitted"})
 				continue
 
 			# Respect per-invoice opt-out
-			if getattr(si, "custom_do_not_sync_to_xero", 0):
-				results["skipped"].append({"name": si.name, "reason": "Xero sync disabled"})
+			if si.custom_do_not_sync_to_xero:
+				results["skipped"].append({"name": name, "reason": "Xero sync disabled"})
 				continue
 
 			# Returns must be synced as Credit Notes (not invoices)
-			if getattr(si, "is_return", 0):
-				results["skipped"].append({"name": si.name, "reason": "Return invoice: sync as Credit Note"})
+			if si.is_return:
+				results["skipped"].append({"name": name, "reason": "Return invoice: sync as Credit Note"})
 				continue
 
 			# Only invoices not yet synced
-			if getattr(si, "custom_xero_invoice_number", None):
-				results["skipped"].append({"name": si.name, "reason": "Already synced"})
+			if si.custom_xero_invoice_number:
+				results["skipped"].append({"name": name, "reason": "Already synced"})
 				continue
 
-			res = create_invoice(si.name, update=False)
+			# create_invoice loads the full doc internally (needs items, taxes, etc.)
+			res = create_invoice(name, update=False)
 
 			if not res or res.get("status") != "success":
 				results["failed"].append(
-					{"name": si.name, "error": (res or {}).get("message") or "Unknown error"}
+					{"name": name, "error": (res or {}).get("message") or "Unknown error"}
 				)
 				continue
 
 			xero_invoice = res.get("data") or {}
 			xero_id = xero_invoice.get("InvoiceID")
 			if xero_id:
-				frappe.db.set_value("Sales Invoice", si.name, "custom_xero_invoice_number", xero_id)
+				frappe.db.set_value("Sales Invoice", name, "custom_xero_invoice_number", xero_id)
 
-			results["created"].append({"name": si.name, "xero_invoice_id": xero_id})
+			results["created"].append({"name": name, "xero_invoice_id": xero_id})
 
 		except Exception as e:
 			results["failed"].append({"name": name, "error": str(e)})

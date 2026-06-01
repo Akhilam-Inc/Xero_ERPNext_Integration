@@ -38,7 +38,7 @@ def authorize():
 			settings.enable = 1
 			settings.flags.ignore_permissions = True
 			settings.save()
-			frappe.db.commit()
+			# No db.commit() — Frappe commits the full request transaction on success (AKH-01)
 
 			return {
 				"status": "success",
