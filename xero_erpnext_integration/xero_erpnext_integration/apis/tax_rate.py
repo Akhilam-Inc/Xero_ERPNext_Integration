@@ -106,9 +106,7 @@ def _report_tax_type_allowed_for_create(report_type: str, target_rate: float) ->
 		return False
 	if report_type in _NON_CREATABLE_REPORT_TAX_TYPES:
 		return False
-	if report_type == "NONE" and target_rate:
-		return False
-	return True
+	return not (report_type == "NONE" and target_rate)
 
 
 def _preferred_report_tax_type_prefix(purchase: bool) -> str:

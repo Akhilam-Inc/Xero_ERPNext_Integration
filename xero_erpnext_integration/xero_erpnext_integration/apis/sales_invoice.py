@@ -92,7 +92,7 @@ def get_line_tax_type(item, invoice):
 			tax_map = frappe.parse_json(raw) or {}
 		except Exception:
 			tax_map = {}
-		for account_head in tax_map.keys():
+		for account_head in tax_map:
 			tt = _account_xero_tax_type(account_head)
 			if tt:
 				return tt

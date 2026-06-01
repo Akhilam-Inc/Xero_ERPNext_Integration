@@ -22,16 +22,17 @@ def create_payment(doc: str, method: str | None = None):
 		if payment.payment_type != "Receive":
 			frappe.throw(_("Only 'Receive' payment entries can be synced to Xero"))
 
-		# Get the related invoice's Xero ID
-		# S3 fix: use db.get_value instead of get_doc inside loop — only one field needed
-		invoice_xero_id = None
-		if payment.references:
-			for ref in payment.references:
-				if ref.reference_doctype == "Sales Invoice":
-					invoice_xero_id = frappe.db.get_value(  # nosemgrep — loop exits via break on first match; only one DB call is ever made
-						"Sales Invoice", ref.reference_name, "custom_xero_invoice_number"
-					)
-					break
+		# Get the related invoice's Xero ID.
+		# Use next() to find the SI reference first, then one db.get_value outside any loop (AKH-02).
+		si_ref = next(
+			(ref for ref in (payment.references or []) if ref.reference_doctype == "Sales Invoice"),
+			None,
+		)
+		invoice_xero_id = (
+			frappe.db.get_value("Sales Invoice", si_ref.reference_name, "custom_xero_invoice_number")
+			if si_ref
+			else None
+		)
 
 		if not invoice_xero_id:
 			frappe.throw(_("No Xero Invoice ID found in the referenced Sales Invoice"))

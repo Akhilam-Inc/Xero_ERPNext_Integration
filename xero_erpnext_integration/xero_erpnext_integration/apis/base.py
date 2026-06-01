@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 from enum import Enum
 from urllib.parse import urlencode, urljoin
 
-import frappe
 import requests
+
+import frappe
 from frappe import _
 from frappe.utils.background_jobs import enqueue
 
@@ -360,9 +361,8 @@ class XeroAPIClient:
 			if isinstance(expires_at, str):
 				expires_at = datetime.fromisoformat(expires_at)
 
-			if datetime.now() >= expires_at - timedelta(minutes=5):
-				if not self.refresh_access_token():
-					frappe.throw(_("Failed to refresh access token. Please re-authorize the application."))
+			if datetime.now() >= expires_at - timedelta(minutes=5) and not self.refresh_access_token():
+				frappe.throw(_("Failed to refresh access token. Please re-authorize the application."))
 
 	def _dispatch(self, method, url, headers, data, params):
 		"""Single HTTP dispatch point — avoids duplicating dispatch logic for retry."""
