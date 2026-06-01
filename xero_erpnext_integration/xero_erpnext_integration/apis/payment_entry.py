@@ -26,7 +26,7 @@ def create_payment(doc: str, method: str | None = None):
 		# S3 fix: use db.get_value instead of get_doc inside loop — only one field needed
 		invoice_xero_id = None
 		if payment.references:
-			for ref in payment.references:  # nosemgrep: akhilam-no-db-get-value-in-loop — loop exits via break on first match; only one DB call is ever made
+			for ref in payment.references:  # nosemgrep
 				if ref.reference_doctype == "Sales Invoice":
 					invoice_xero_id = frappe.db.get_value(
 						"Sales Invoice", ref.reference_name, "custom_xero_invoice_number"

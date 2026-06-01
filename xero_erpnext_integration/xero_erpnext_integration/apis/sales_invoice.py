@@ -24,9 +24,9 @@ def get_line_tax_type(item, invoice):
 	"""Pick the Xero TaxType for a single Sales Invoice / Sales Return line.
 
 	Resolution order:
-	1. Per-line `item_tax_rate` (JSON of {account_head: rate}) – look up the first
+	1. Per-line `item_tax_rate` (JSON of {account_head: rate}) - look up the first
 	   account_head whose ERPNext Account has `custom_xero_tax_type` set.
-	2. Invoice-level `taxes` table – first row whose `account_head` has
+	2. Invoice-level `taxes` table - first row whose `account_head` has
 	   `custom_xero_tax_type` set.
 	3. Fallback to "NONE" (no tax) so the request remains valid.
 	"""
@@ -36,7 +36,7 @@ def get_line_tax_type(item, invoice):
 			tax_map = frappe.parse_json(raw) or {}
 		except Exception:
 			tax_map = {}
-		for account_head in tax_map.keys():
+		for account_head in tax_map:
 			tt = _account_xero_tax_type(account_head)
 			if tt:
 				return tt
@@ -448,10 +448,6 @@ def create_invoice(doc: str, method: str | None = None, update_invoice: bool = F
 		contact_id = get_customer_contact_id(invoice.customer)
 		if not contact_id:
 			frappe.throw(_("No Xero Contact ID found for customer: {0}").format(invoice.customer))
-
-		settings = frappe.get_single("Xero Settings")
-		default_account_code = settings.default_account_code or ""
-		default_tax_type = settings.default_tax_type or "NONE"
 
 		# Build a tax-rate lookup keyed by item_code for per-item tax rates
 		# Falls back to the invoice-level effective tax rate if no per-item breakdown
