@@ -28,7 +28,8 @@ def get_line_tax_type(item, invoice):
 	   account_head whose ERPNext Account has `custom_xero_tax_type` set.
 	2. Invoice-level `taxes` table - first row whose `account_head` has
 	   `custom_xero_tax_type` set.
-	3. Fallback to "NONE" (no tax) so the request remains valid.
+	3. Xero Settings `default_tax_type` (global fallback).
+	4. "NONE" (no tax) so the request remains valid.
 	"""
 	raw = item.get("item_tax_rate") if hasattr(item, "get") else getattr(item, "item_tax_rate", None)
 	if raw:

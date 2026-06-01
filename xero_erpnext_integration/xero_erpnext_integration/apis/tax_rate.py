@@ -21,6 +21,137 @@ from .base import get_xero_client
 DEFAULT_SALES_REPORT_TAX_TYPE = "OUTPUT"
 DEFAULT_PURCHASE_REPORT_TAX_TYPE = "INPUT"
 
+# Xero requires ReportTaxType when creating rates for these countries only.
+# US / Global orgs must omit it (even if some existing rates carry legacy values).
+_REPORT_TAX_TYPE_COUNTRIES = frozenset({"AU", "NZ", "GB", "UK", "SG"})
+
+# Report tax types that exist on some orgs but must not be used when creating rates.
+_NON_CREATABLE_REPORT_TAX_TYPES = frozenset(
+	{
+		"AVALARA",
+		"GSTONIMPORTS",
+		"BASEXCLUDED",
+		"MOSSSALES",
+		"MOSSSALESOUTOFEU",
+		"MOSSPURCHASES",
+		"MOSSPURCHASESOUTOFEU",
+	}
+)
+
+
+def _xero_bool(value) -> bool:
+	if value is True:
+		return True
+	if value is False or value is None:
+		return False
+	return str(value).strip().lower() in ("true", "1", "yes")
+
+
+def _account_is_purchase_side(account) -> bool:
+	"""Heuristic: purchase/input tax accounts vs sales/output."""
+	name_blob = " ".join(
+		part
+		for part in [
+			(account.account_name or ""),
+			(account.name or ""),
+			(account.parent_account or ""),
+		]
+		if part
+	).lower()
+	return any(word in name_blob for word in ("purchase", "input", "buy", "expense"))
+
+
+def _get_org_country_code(client) -> str | None:
+	cache = getattr(frappe.local, "_xero_org_country_code", None)
+	if cache is not None:
+		return cache or None
+
+	code = None
+	try:
+		response = client.make_request("GET", "/Organisation") or {}
+		orgs = response.get("Organisations") or []
+		if orgs:
+			code = (orgs[0].get("CountryCode") or "").strip().upper() or None
+	except Exception:
+		pass
+
+	frappe.local._xero_org_country_code = code or ""
+	return code
+
+
+def _get_xero_tax_rates(client, *, refresh: bool = False) -> list[dict]:
+	if not refresh and hasattr(frappe.local, "_xero_tax_rates_cache"):
+		return frappe.local._xero_tax_rates_cache
+
+	response = client.make_request("GET", "/TaxRates") or {}
+	rates = response.get("TaxRates") or []
+	frappe.local._xero_tax_rates_cache = rates
+	return rates
+
+
+def _org_requires_report_tax_type(client, xero_rates: list[dict] | None = None) -> bool:
+	"""True only for regional orgs where Xero mandates ReportTaxType on POST."""
+	del xero_rates  # country alone determines requirement
+	country = _get_org_country_code(client)
+	return country in _REPORT_TAX_TYPE_COUNTRIES
+
+
+def _valid_report_tax_types(xero_rates: list[dict]) -> set[str]:
+	return {
+		(r.get("ReportTaxType") or "").strip() for r in xero_rates if (r.get("ReportTaxType") or "").strip()
+	}
+
+
+def _report_tax_type_allowed_for_create(report_type: str, target_rate: float) -> bool:
+	if not report_type:
+		return False
+	if report_type in _NON_CREATABLE_REPORT_TAX_TYPES:
+		return False
+	return not (report_type == "NONE" and target_rate)
+
+
+def _preferred_report_tax_type_prefix(purchase: bool) -> str:
+	return "INPUT" if purchase else "OUTPUT"
+
+
+def _pick_report_tax_type_from_rates(account, xero_rates: list[dict]) -> str | None:
+	"""Choose a ReportTaxType from existing Xero rates safe for creating new rates."""
+	purchase = _account_is_purchase_side(account)
+	target_rate = flt(account.tax_rate)
+	prefix = _preferred_report_tax_type_prefix(purchase)
+	candidates: list[tuple[tuple, str]] = []
+
+	for rate in xero_rates:
+		if (rate.get("Status") or "ACTIVE").upper() != "ACTIVE":
+			continue
+		report_type = (rate.get("ReportTaxType") or "").strip()
+		if not _report_tax_type_allowed_for_create(report_type, target_rate):
+			continue
+
+		can_revenue = _xero_bool(rate.get("CanApplyToRevenue"))
+		can_expenses = _xero_bool(rate.get("CanApplyToExpenses"))
+		if purchase:
+			if not can_expenses:
+				continue
+			strictness = 0 if not can_revenue else 1
+		else:
+			if not can_revenue:
+				continue
+			strictness = 0 if not can_expenses else 1
+
+		effective = _xero_effective_rate(rate)
+		rate_delta = abs(effective - target_rate) if target_rate else 999
+		prefix_match = 0 if report_type.startswith(prefix) else 1
+		modern_bonus = 0 if report_type.endswith("2") else 1
+		sort_key = (prefix_match, rate_delta, strictness, modern_bonus, report_type)
+		candidates.append((sort_key, report_type))
+
+	if not candidates:
+		return None
+
+	candidates.sort(key=lambda item: item[0])
+	return candidates[0][1]
+
 
 def _resolve_report_tax_type(account) -> str:
 	"""Pick the Xero ReportTaxType for an Account.
