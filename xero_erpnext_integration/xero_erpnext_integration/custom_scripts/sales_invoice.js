@@ -53,16 +53,6 @@ frappe.ui.form.on("Sales Invoice", {
 	customer(frm) {
 		update_customer_contact_id(frm);
 	},
-
-	after_save(frm) {
-		if (frm.doc.customer && frm.doc.custom_do_not_sync_to_xero == 0) {
-			update_customer_contact_id(frm, true);
-		}
-
-		if (frm.doc.workflow_state === "Synced to Xero" && frm.doc.custom_xero_invoice_number) {
-			sync_to_xero_workflow_action(frm, true);
-		}
-	},
 });
 
 // ---------------- Helper Functions ----------------
@@ -227,7 +217,7 @@ function toggle_xero_sync(frm, disable) {
 	);
 }
 
-function update_customer_contact_id(frm, autoSave = false) {
+function update_customer_contact_id(frm) {
 	if (frm.doc.customer) {
 		frappe.call({
 			method: "xero_erpnext_integration.xero_erpnext_integration.apis.sales_invoice.get_customer_contact_id",
@@ -235,11 +225,9 @@ function update_customer_contact_id(frm, autoSave = false) {
 			callback(r) {
 				if (r.message) {
 					frm.set_value("custom_contact_id", r.message);
-					if (autoSave) frm.save();
 				} else {
 					frm.set_value("custom_contact_id", "");
 					frm.set_value("workflow_state", "Draft");
-					if (autoSave) frm.save();
 				}
 			},
 		});
